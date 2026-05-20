@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
 import { ingestRouter } from '@/routes/ingest'
 import { statsRouter } from '@/routes/stats'
+import { digestRouter } from './routes/digest'
 
 const app = new Hono()
 
@@ -11,6 +12,7 @@ app.use('*', cors())
 app.get('/health', (c) => c.json({ status: 'ok' }))
 app.route('/events', ingestRouter)
 app.route('/stats', statsRouter)
+app.route('/digest', digestRouter)
 
 const PORT = Number(process.env.PORT) || 3001
 
