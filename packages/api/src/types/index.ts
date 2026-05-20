@@ -39,3 +39,20 @@ export interface PulsarStats {
   topPages: TopPage[]
   recentSessions: RecentSession[]
 }
+
+export interface FilterResult {
+  passed: IncomingEvent[]
+  dropped: number
+  reasons: string[]
+}
+
+export interface DigestData {
+  projectKey: string
+  date: string
+  summary: string
+  comebackRate: number
+  totalVisitors: number
+  topPage: string
+  returning: number
+  insight: string
+}

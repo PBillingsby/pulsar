@@ -1,4 +1,4 @@
-import type { IncomingEvent } from '@/types/index'
+import type { FilterResult, IncomingEvent } from '@/types/index'
 
 const MAX_EVENTS_PER_BATCH = 100
 const MAX_TIMESTAMP_DRIFT_MS = 24 * 60 * 60 * 1000
@@ -34,12 +34,6 @@ function isValidTimestamp(timestamp: string): boolean {
   const now = Date.now()
   const diff = Math.abs(now - date.getTime())
   return diff < MAX_TIMESTAMP_DRIFT_MS
-}
-
-export interface FilterResult {
-  passed: IncomingEvent[]
-  dropped: number
-  reasons: string[]
 }
 
 export function filterEvents(
