@@ -1,8 +1,8 @@
 import type { PulsarConfig } from '@/types/index'
-import { getOrCreateSessionId } from '@/lib/session'
-import { EventQueue } from '@/lib/queue'
-import { listenForClicks } from '@/lib/clicks'
-import { listenForRouteChanges } from '@/lib/routes'
+import { getOrCreateSessionId } from '@/lib/session/index'
+import { EventQueue } from '@/lib/queue/index'
+import { listenForClicks } from '@/lib/events/clicks'
+import { listenForRouteChanges } from '@/lib/events/routes'
 
 const DEFAULT_ENDPOINT = 'https://api.pulsar.dev/events'
 

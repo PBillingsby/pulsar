@@ -1,5 +1,5 @@
 import type { PulsarEvent } from '@/types/index'
-import { sendEvents } from '@/lib/sender'
+import { sendEvents } from '@/lib/queue/sender'
 
 const FLUSH_INTERVAL_MS = 5000
 const MAX_QUEUE_SIZE = 20

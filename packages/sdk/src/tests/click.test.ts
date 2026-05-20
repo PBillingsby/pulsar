@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'bun:test'
 import { Window } from 'happy-dom'
 import type { PulsarEvent } from '@/types/index'
 import { EventQueue } from '@/lib/queue'
-import { listenForClicks } from '@/lib/clicks'
+import { listenForClicks } from '@/lib/events/clicks'
 
 describe('listenForClicks', () => {
   let window: Window
