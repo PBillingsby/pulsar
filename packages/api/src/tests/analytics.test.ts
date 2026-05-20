@@ -11,24 +11,25 @@ const mockGroupByUrl = mock(async () => [
   { url: 'https://example.com/home', _count: { url: 2 } },
   { url: 'https://example.com/pricing', _count: { url: 1 } },
 ])
+
 const mockGroupBySession = mock(async () => [
   {
     sessionId: 'session-1',
     _count: { sessionId: 3 },
-    _min: { timestamp: new Date('2026-01-01') },
-    _max: { timestamp: new Date('2026-01-02') },
+    _min: { timestamp: new Date('2026-01-01T10:00:00Z') },
+    _max: { timestamp: new Date('2026-01-02T10:00:00Z') }, // different day = returned
   },
   {
     sessionId: 'session-2',
-    _count: { sessionId: 1 },
-    _min: { timestamp: new Date('2026-01-01') },
-    _max: { timestamp: new Date('2026-01-01') },
+    _count: { sessionId: 2 },
+    _min: { timestamp: new Date('2026-01-01T10:00:00Z') },
+    _max: { timestamp: new Date('2026-01-01T11:00:00Z') }, // same day = not returned
   },
   {
     sessionId: 'session-3',
     _count: { sessionId: 1 },
-    _min: { timestamp: new Date('2026-01-01') },
-    _max: { timestamp: new Date('2026-01-01') },
+    _min: { timestamp: new Date('2026-01-01T10:00:00Z') },
+    _max: { timestamp: new Date('2026-01-01T10:00:00Z') }, // same day = not returned
   },
 ])
 

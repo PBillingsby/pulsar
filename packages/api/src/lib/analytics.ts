@@ -28,7 +28,18 @@ export async function getStats(projectKey: string): Promise<PulsarStats> {
   ])
 
   const totalVisitors = uniqueSessions.length
-  const returnedSessions = sessionData.filter((s) => (s._count.sessionId ?? 0) > 1)
+
+  // A session "returned" if its first and last event are on different calendar days
+  const returnedSessions = sessionData.filter((s) => {
+    const first = s._min.timestamp
+    const last = s._max.timestamp
+    if (!first || !last) return false
+
+    const firstDay = new Date(first).toISOString().slice(0, 10)
+    const lastDay = new Date(last).toISOString().slice(0, 10)
+    return firstDay !== lastDay
+  })
+
   const comebackRate = totalVisitors > 0
     ? Math.round((returnedSessions.length / totalVisitors) * 100)
     : 0
@@ -47,7 +58,12 @@ export async function getStats(projectKey: string): Promise<PulsarStats> {
       pageViews: s._count.sessionId ?? 0,
       firstSeen: s._min.timestamp ?? new Date(),
       lastSeen: s._max.timestamp ?? new Date(),
-      returned: (s._count.sessionId ?? 0) > 1,
+      returned: (() => {
+        const first = s._min.timestamp
+        const last = s._max.timestamp
+        if (!first || !last) return false
+        return new Date(first).toISOString().slice(0, 10) !== new Date(last).toISOString().slice(0, 10)
+      })(),
     })),
   }
 

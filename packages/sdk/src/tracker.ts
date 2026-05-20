@@ -1,5 +1,5 @@
 import type { PulsarConfig } from '@/types/index'
-import { generateSessionId } from '@/lib/session'
+import { getOrCreateSessionId } from '@/lib/session'
 import { EventQueue } from '@/lib/queue'
 import { listenForClicks } from '@/lib/clicks'
 import { listenForRouteChanges } from '@/lib/routes'
@@ -13,7 +13,7 @@ export class Tracker {
 
   constructor(config: PulsarConfig) {
     this.config = config
-    this.sessionId = generateSessionId()
+    this.sessionId = getOrCreateSessionId()
     this.queue = new EventQueue(
       config.endpoint ?? DEFAULT_ENDPOINT,
       config.debug ?? false
