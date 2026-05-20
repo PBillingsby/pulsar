@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { prisma } from '@/db/client'
 import { validatePayload } from '@/lib/validate'
+import { filterEvents } from '@/lib/filter'
 import type { ApiResponse } from '@/types/index'
 
 export const ingestRouter = new Hono()
@@ -16,8 +17,18 @@ ingestRouter.post('/', async (c) => {
     }, 400)
   }
 
+  const debug = c.req.header('x-pulsar-debug') === 'true'
+  const { passed, dropped, reasons } = filterEvents(events, debug)
+
+  if (passed.length === 0) {
+    return c.json<ApiResponse<{ received: number; dropped: number }>>({
+      success: true,
+      data: { received: 0, dropped },
+    })
+  }
+
   await prisma.event.createMany({
-    data: events.map((e) => ({
+    data: passed.map((e) => ({
       type: e.type,
       sessionId: e.sessionId,
       projectKey: e.projectKey,
@@ -28,8 +39,12 @@ ingestRouter.post('/', async (c) => {
     })),
   })
 
-  return c.json<ApiResponse<{ received: number }>>({
+  return c.json<ApiResponse<{ received: number; dropped: number; reasons?: string[] }>>({
     success: true,
-    data: { received: events.length },
+    data: {
+      received: passed.length,
+      dropped,
+      ...(debug && reasons.length > 0 ? { reasons } : {}),
+    },
   })
 })
