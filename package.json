@@ -1,0 +1,13 @@
+{
+  "name": "pulsar",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:sdk": "bun run --cwd packages/sdk dev",
+    "dev:api": "bun run --cwd packages/api dev",
+    "test": "bun test --cwd packages/sdk && bun test --cwd packages/api",
+    "build": "bun run --cwd packages/sdk build"
+  }
+}
