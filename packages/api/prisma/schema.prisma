@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  type       String
+  sessionId  String
+  projectKey String
+  url        String
+  referrer   String?
+  timestamp  DateTime
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([projectKey])
+  @@index([sessionId])
+  @@index([projectKey, timestamp])
+}
+
+model Session {
+  id         String   @id
+  projectKey String
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @updatedAt
+  pageViews  Int      @default(0)
+  returned   Boolean  @default(false)
+
+  @@index([projectKey])
+}

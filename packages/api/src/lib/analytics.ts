@@ -1,0 +1,55 @@
+import { prisma } from '@/db/client'
+import type { PulsarStats, TopPage, RecentSession } from '@/types/index'
+
+export async function getStats(projectKey: string): Promise<PulsarStats> {
+  const [totalPageViews, uniqueSessions, topPages, sessionData] = await Promise.all([
+    prisma.event.count({
+      where: { projectKey, type: 'page_view' },
+    }),
+    prisma.event.findMany({
+      where: { projectKey },
+      select: { sessionId: true },
+      distinct: ['sessionId'],
+    }),
+    prisma.event.groupBy({
+      by: ['url'],
+      where: { projectKey, type: 'page_view' },
+      _count: { url: true },
+      orderBy: { _count: { url: 'desc' } },
+      take: 5,
+    }),
+    prisma.event.groupBy({
+      by: ['sessionId'],
+      where: { projectKey, type: 'page_view' },
+      _count: { sessionId: true },
+      _min: { timestamp: true },
+      _max: { timestamp: true },
+    }),
+  ])
+
+  const totalVisitors = uniqueSessions.length
+  const returnedSessions = sessionData.filter((s) => (s._count.sessionId ?? 0) > 1)
+  const comebackRate = totalVisitors > 0
+    ? Math.round((returnedSessions.length / totalVisitors) * 100)
+    : 0
+
+  const stats: PulsarStats = {
+    projectKey,
+    totalVisitors,
+    totalPageViews,
+    comebackRate,
+    topPages: topPages.map((p): TopPage => ({
+      url: p.url,
+      views: p._count.url,
+    })),
+    recentSessions: sessionData.slice(0, 10).map((s): RecentSession => ({
+      sessionId: s.sessionId,
+      pageViews: s._count.sessionId ?? 0,
+      firstSeen: s._min.timestamp ?? new Date(),
+      lastSeen: s._max.timestamp ?? new Date(),
+      returned: (s._count.sessionId ?? 0) > 1,
+    })),
+  }
+
+  return stats
+}
