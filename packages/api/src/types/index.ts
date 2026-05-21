@@ -5,6 +5,7 @@ export interface IncomingEvent {
   url: string
   referrer?: string
   timestamp: string
+  sessionStart?: string
   metadata?: Record<string, unknown>
 }
 
@@ -35,7 +36,8 @@ export interface PulsarStats {
   projectKey: string
   totalVisitors: number
   totalPageViews: number
-  comebackRate: number
+  comebackRate: number | null
+  insufficientData: boolean
   topPages: TopPage[]
   recentSessions: RecentSession[]
 }
