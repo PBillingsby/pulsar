@@ -52,7 +52,7 @@ export interface DigestData {
   projectKey: string
   date: string
   summary: string
-  comebackRate: number
+  comebackRate: number | null
   totalVisitors: number
   topPage: string
   returning: number
@@ -70,4 +70,10 @@ export interface ProjectResponse {
   email: string
   beta: boolean
   createdAt: Date
+}
+
+export interface FilterResult {
+  passed: IncomingEvent[]
+  dropped: number
+  reasons: string[]
 }

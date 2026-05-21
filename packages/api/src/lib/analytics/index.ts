@@ -27,7 +27,7 @@ export async function getStats(projectKey: string): Promise<PulsarStats> {
     }),
   ])
 
-  const totalVisitors = uniqueSessions.length
+  const totalVisitors: number = uniqueSessions.length
 
   // A session "returned" if its first and last event are on different calendar days
   const returnedSessions = sessionData.filter((s) => {
@@ -35,16 +35,16 @@ export async function getStats(projectKey: string): Promise<PulsarStats> {
     const last = s._max.timestamp
     if (!first || !last) return false
 
-    const firstDay = new Date(first).toISOString().slice(0, 10)
-    const lastDay = new Date(last).toISOString().slice(0, 10)
+    const firstDay: string = new Date(first).toISOString().slice(0, 10)
+    const lastDay: string = new Date(last).toISOString().slice(0, 10)
     return firstDay !== lastDay
   })
 
-  const MIN_SESSIONS_FOR_COMEBACK = 10
+  const MIN_SESSIONS_FOR_COMEBACK: number = 10
 
-  const insufficientData = totalVisitors < MIN_SESSIONS_FOR_COMEBACK
+  const insufficientData: boolean = totalVisitors < MIN_SESSIONS_FOR_COMEBACK
 
-  const comebackRate = insufficientData
+  const comebackRate: number | null = insufficientData
     ? null
     : totalVisitors > 0
       ? Math.round((returnedSessions.length / totalVisitors) * 100)

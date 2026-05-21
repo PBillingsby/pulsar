@@ -1,14 +1,14 @@
 import { Resend } from 'resend'
 import type { DigestData } from '@/types/index'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
 function renderEmail(digest: DigestData): string {
   const comebackDisplay = digest.comebackRate !== null
     ? `${digest.comebackRate}%`
     : 'Not enough data yet'
 
-  const topPageDisplay = digest.topPage || 'No pages tracked yet'
+  const topPageDisplay: string = digest.topPage || 'No pages tracked yet'
 
   return `
 <!DOCTYPE html>

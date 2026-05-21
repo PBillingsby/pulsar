@@ -2,7 +2,7 @@ import type { DigestData, PulsarStats } from '@/types/index'
 
 function getTopPage(url: string): string {
   try {
-    const parsed = new URL(url)
+    const parsed: string | URL = new URL(url)
     return parsed.pathname === '/' ? 'homepage' : parsed.pathname
   } catch {
     return url
@@ -26,9 +26,9 @@ function getTopPageInsight(topPage: string, totalPageViews: number): string {
 }
 
 export function generateDigest(stats: PulsarStats): DigestData {
-  const returning = stats.recentSessions.filter((s) => s.returned).length
-  const topPage = stats.topPages[0]?.url ?? ''
-  const topPagePath = topPage ? getTopPage(topPage) : ''
+  const returning: number = stats.recentSessions.filter((s) => s.returned).length
+  const topPage: string = stats.topPages[0]?.url ?? ''
+  const topPagePath: string = topPage ? getTopPage(topPage) : ''
 
   const lines: string[] = []
 
@@ -46,7 +46,7 @@ export function generateDigest(stats: PulsarStats): DigestData {
     }
   }
 
-  const summary = lines.join(' ')
+  const summary: string = lines.join(' ')
 
   let insight: string
   if (stats.insufficientData) {

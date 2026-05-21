@@ -20,11 +20,11 @@ export function isValidEvent(event: unknown): event is IncomingEvent {
 export function validatePayload(body: unknown): IncomingEvent[] | null {
   if (!body || typeof body !== 'object') return null
 
-  const payload = body as Record<string, unknown>
+  const payload: Record<string, unknown> = body as Record<string, unknown>
 
   if (!Array.isArray(payload.events)) return null
 
-  const valid = payload.events.filter(isValidEvent)
+  const valid: IncomingEvent[] = payload.events.filter(isValidEvent)
 
   if (valid.length === 0) return null
 
