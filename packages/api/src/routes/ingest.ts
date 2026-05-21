@@ -17,8 +17,9 @@ ingestRouter.post('/', async (c) => {
     }, 400)
   }
 
-  const debug = c.req.header('x-pulsar-debug') === 'true'
-  const { passed, dropped, reasons } = filterEvents(events, debug)
+  const ignored: boolean = c.req.header('x-pulsar-ignore') === 'true'
+  const debug: boolean = c.req.header('x-pulsar-debug') === 'true'
+  const { passed, dropped, reasons } = filterEvents(events, debug, ignored)
 
   if (passed.length === 0) {
     return c.json<ApiResponse<{ received: number; dropped: number }>>({
