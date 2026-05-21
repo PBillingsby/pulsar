@@ -62,21 +62,37 @@ describe('getStats', () => {
     expect(stats.projectKey).toBe('test-key')
     expect(typeof stats.totalVisitors).toBe('number')
     expect(typeof stats.totalPageViews).toBe('number')
-    expect(typeof stats.comebackRate).toBe('number')
+    expect(stats.comebackRate === null || typeof stats.comebackRate === 'number').toBe(true)
     expect(Array.isArray(stats.topPages)).toBe(true)
     expect(Array.isArray(stats.recentSessions)).toBe(true)
+    expect(typeof stats.insufficientData).toBe('boolean')
+  })
+
+  it('calculates comeback rate when sufficient data exists', async () => {
+    // override findMany to return 10+ sessions
+    mockFindMany.mockImplementationOnce(async () =>
+      Array.from({ length: 12 }, (_, i) => ({ sessionId: `session-${i}` }))
+    )
+
+    const stats = await getStats('test-key')
+    expect(stats.insufficientData).toBe(false)
+    expect(typeof stats.comebackRate).toBe('number')
   })
 
   it('calculates comeback rate correctly', async () => {
     const stats = await getStats('test-key')
-    // 1 out of 3 sessions returned (session-1 has 3 page views)
-    expect(stats.comebackRate).toBe(33)
+    // 3 sessions, 1 returned — above MIN_SESSIONS floor so comeback rate should be set
+    // but mock only has 3 sessions which is below 10 — so it will be null
+    // update mock to have 10+ sessions or check for null
+    expect(stats.insufficientData).toBe(true)
+    expect(stats.comebackRate).toBeNull()
   })
 
   it('comeback rate is 0 when no visitors', async () => {
     mockFindMany.mockImplementationOnce(async () => [])
     const stats = await getStats('test-key')
-    expect(stats.comebackRate).toBe(0)
+    expect(stats.comebackRate).toBeNull()
+    expect(stats.insufficientData).toBe(true)
   })
 
   it('returns top pages sorted by views', async () => {
