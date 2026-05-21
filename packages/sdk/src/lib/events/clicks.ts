@@ -1,13 +1,18 @@
 import type { PulsarEvent } from '@/types/index'
-import { EventQueue } from '@/lib/queue'
+import { EventQueue } from '@/lib/queue/index'
+import { isIgnored } from '@/lib/session/index'
 
-function getElementLabel(el: Element): string {
-  return (
+const NOISE_TAGS = new Set(['html', 'body', 'div', 'span', 'section', 'main', 'article', 'aside', 'header', 'footer', 'nav'])
+
+function getElementLabel(el: Element): string | null {
+  const label =
     el.getAttribute('aria-label') ||
     el.getAttribute('data-pulsar') ||
     el.getAttribute('id') ||
-    el.tagName.toLowerCase()
-  )
+    (el.tagName.toLowerCase() === 'a' ? el.getAttribute('href') : null) ||
+    (el.tagName.toLowerCase() === 'button' ? el.textContent?.trim().slice(0, 40) : null)
+
+  return label && label.trim().length > 0 ? label.trim() : null
 }
 
 function getClickPath(el: Element): string {
@@ -15,7 +20,8 @@ function getClickPath(el: Element): string {
   let current: Element | null = el
 
   while (current && parts.length < 3) {
-    parts.unshift(getElementLabel(current))
+    const label = getElementLabel(current)
+    if (label) parts.unshift(label)
     current = current.parentElement
   }
 
@@ -29,8 +35,19 @@ export function listenForClicks(
   debug: boolean
 ): void {
   document.addEventListener('click', (e) => {
+    if (isIgnored()) return
+
     const target = e.target as Element
     if (!target) return
+
+    const tag = target.tagName.toLowerCase()
+    const label = getElementLabel(target)
+
+    // drop clicks on unlabeled noise elements
+    if (NOISE_TAGS.has(tag) && !label) {
+      if (debug) console.log('[Pulsar] click ignored — unlabeled noise element', tag)
+      return
+    }
 
     const event: PulsarEvent = {
       type: 'click',
@@ -38,10 +55,11 @@ export function listenForClicks(
       projectKey,
       url: window.location.href,
       timestamp: new Date().toISOString(),
+      sessionStart: undefined,
       metadata: {
-        label: getElementLabel(target),
+        label: label ?? tag,
         path: getClickPath(target),
-        tagName: target.tagName.toLowerCase(),
+        tagName: tag,
       },
     }
 
