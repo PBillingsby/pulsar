@@ -33,3 +33,16 @@ model Session {
 
   @@index([projectKey])
 }
+
+model Project {
+  id         String   @id @default(cuid())
+  projectKey String   @unique
+  name       String
+  email      String
+  beta       Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([projectKey])
+  @@index([email])
+}

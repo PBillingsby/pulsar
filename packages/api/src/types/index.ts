@@ -58,3 +58,16 @@ export interface DigestData {
   returning: number
   insight: string
 }
+
+export interface RegisterProjectInput {
+  name: string
+  email: string
+}
+
+export interface ProjectResponse {
+  projectKey: string
+  name: string
+  email: string
+  beta: boolean
+  createdAt: Date
+}
