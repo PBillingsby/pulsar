@@ -7,10 +7,10 @@ export function listenForRouteChanges(
   queue: EventQueue,
   debug: boolean
 ): void {
-  let currentUrl = window.location.href
+  let currentUrl: string = window.location.href
 
   const track = () => {
-    const newUrl = window.location.href
+    const newUrl: string = window.location.href
     if (newUrl === currentUrl) return
     currentUrl = newUrl
 

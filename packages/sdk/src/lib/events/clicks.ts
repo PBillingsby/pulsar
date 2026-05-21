@@ -2,10 +2,10 @@ import type { PulsarEvent } from '@/types/index'
 import { EventQueue } from '@/lib/queue/index'
 import { isIgnored } from '@/lib/session/index'
 
-const NOISE_TAGS = new Set(['html', 'body', 'div', 'span', 'section', 'main', 'article', 'aside', 'header', 'footer', 'nav'])
+const NOISE_TAGS: Set<string> = new Set(['html', 'body', 'div', 'span', 'section', 'main', 'article', 'aside', 'header', 'footer', 'nav'])
 
 function getElementLabel(el: Element): string | null {
-  const label =
+  const label: string | null =
     el.getAttribute('aria-label') ||
     el.getAttribute('data-pulsar') ||
     el.getAttribute('id') ||
