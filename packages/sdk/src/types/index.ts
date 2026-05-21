@@ -2,6 +2,7 @@ export interface PulsarConfig {
   projectKey: string
   debug?: boolean
   endpoint?: string
+  ignoreMe?: boolean
 }
 
 export interface PulsarEvent {
@@ -11,5 +12,6 @@ export interface PulsarEvent {
   url: string
   referrer?: string
   timestamp: string
+  sessionStart?: string
   metadata?: Record<string, unknown>
 }
