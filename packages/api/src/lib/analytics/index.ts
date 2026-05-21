@@ -40,15 +40,22 @@ export async function getStats(projectKey: string): Promise<PulsarStats> {
     return firstDay !== lastDay
   })
 
-  const comebackRate = totalVisitors > 0
-    ? Math.round((returnedSessions.length / totalVisitors) * 100)
-    : 0
+  const MIN_SESSIONS_FOR_COMEBACK = 10
+
+  const insufficientData = totalVisitors < MIN_SESSIONS_FOR_COMEBACK
+
+  const comebackRate = insufficientData
+    ? null
+    : totalVisitors > 0
+      ? Math.round((returnedSessions.length / totalVisitors) * 100)
+      : null
 
   const stats: PulsarStats = {
     projectKey,
     totalVisitors,
     totalPageViews,
     comebackRate,
+    insufficientData,
     topPages: topPages.map((p): TopPage => ({
       url: p.url,
       views: p._count.url,
