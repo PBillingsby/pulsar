@@ -4,6 +4,12 @@ import type { DigestData } from '@/types/index'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 function renderEmail(digest: DigestData): string {
+  const comebackDisplay = digest.comebackRate !== null
+    ? `${digest.comebackRate}%`
+    : 'Not enough data yet'
+
+  const topPageDisplay = digest.topPage || 'No pages tracked yet'
+
   return `
 <!DOCTYPE html>
 <html>
@@ -41,7 +47,7 @@ function renderEmail(digest: DigestData): string {
                 <tr>
                   <td style="background-color: #f4f4f4; border-radius: 8px; padding: 24px;">
                     <p style="margin: 0; font-size: 13px; color: #888888; text-transform: uppercase; letter-spacing: 1px;">Comeback Rate</p>
-                    <p style="margin: 8px 0 0; font-size: 48px; font-weight: 700; color: #1a1a1a; line-height: 1;">${digest.comebackRate}%</p>
+                    <p style="margin: 8px 0 0; font-size: 48px; font-weight: 700; color: #1a1a1a; line-height: 1;">${comebackDisplay}</p>
                     <p style="margin: 8px 0 0; font-size: 14px; color: #555555;">of visitors returned</p>
                   </td>
                 </tr>
@@ -82,7 +88,7 @@ function renderEmail(digest: DigestData): string {
                       <tr>
                         <td style="background-color: #f4f4f4; border-radius: 8px; padding: 20px;">
                           <p style="margin: 0; font-size: 12px; color: #888888; text-transform: uppercase; letter-spacing: 1px;">Top Page</p>
-                          <p style="margin: 6px 0 0; font-size: 18px; font-weight: 700; color: #1a1a1a;">${digest.topPage}</p>
+                          <p style="margin: 6px 0 0; font-size: 18px; font-weight: 700; color: #1a1a1a;">${topPageDisplay}</p>
                         </td>
                       </tr>
                     </table>

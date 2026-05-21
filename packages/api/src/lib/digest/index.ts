@@ -28,26 +28,36 @@ function getTopPageInsight(topPage: string, totalPageViews: number): string {
 export function generateDigest(stats: PulsarStats): DigestData {
   const returning = stats.recentSessions.filter((s) => s.returned).length
   const topPage = stats.topPages[0]?.url ?? ''
-  const topPagePath = getTopPage(topPage)
+  const topPagePath = topPage ? getTopPage(topPage) : ''
 
   const lines: string[] = []
 
-  lines.push(`${stats.totalVisitors} ${stats.totalVisitors === 1 ? 'visitor' : 'visitors'} in the last 7 days.`)
-
-  if (returning > 0) {
-    lines.push(`${returning} came back.`)
+  if (stats.totalVisitors === 0) {
+    lines.push('No visitors yet.')
   } else {
-    lines.push(`No one has returned yet.`)
-  }
-
-  if (stats.topPages.length > 0) {
-    lines.push(`Most visited: ${topPagePath}.`)
+    lines.push(`${stats.totalVisitors} ${stats.totalVisitors === 1 ? 'visitor' : 'visitors'} in the last 7 days.`)
+    if (returning > 0) {
+      lines.push(`${returning} came back.`)
+    } else {
+      lines.push('No one has returned yet.')
+    }
+    if (topPagePath) {
+      lines.push(`Most visited: ${topPagePath}.`)
+    }
   }
 
   const summary = lines.join(' ')
-  const insight = stats.comebackRate > 0
-    ? getComebackContext(stats.comebackRate)
-    : getTopPageInsight(topPagePath, stats.totalPageViews)
+
+  let insight: string
+  if (stats.insufficientData) {
+    insight = 'Keep driving traffic. Comeback rate will appear once you have at least 10 unique visitors.'
+  } else if (stats.comebackRate !== null) {
+    insight = getComebackContext(stats.comebackRate)
+  } else if (topPagePath) {
+    insight = getTopPageInsight(topPagePath, stats.totalPageViews)
+  } else {
+    insight = 'Install Pulsar on your product and start driving traffic to see your first insights.'
+  }
 
   return {
     projectKey: stats.projectKey,

@@ -5,6 +5,8 @@ import { ingestRouter } from '@/routes/ingest'
 import { statsRouter } from '@/routes/stats'
 import { digestRouter } from '@/routes/digest'
 import { projectsRouter } from '@/routes/projects'
+import { startScheduler } from '@/lib/scheduler/index'
+
 const app = new Hono()
 
 app.use('*', cors())
@@ -19,4 +21,5 @@ const PORT = Number(process.env.PORT) || 3001
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`Pulsar API running on http://localhost:${PORT}`)
+  startScheduler()
 })
