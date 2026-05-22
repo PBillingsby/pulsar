@@ -46,3 +46,18 @@ model Project {
   @@index([projectKey])
   @@index([email])
 }
+
+model WeeklySnapshot {
+  id            String   @id @default(cuid())
+  projectKey    String
+  weekStart     DateTime
+  totalVisitors Int
+  returning     Int
+  comebackRate  Float?
+  topPage       String?
+  totalEvents   Int
+  createdAt     DateTime @default(now())
+
+  @@unique([projectKey, weekStart])
+  @@index([projectKey])
+}
