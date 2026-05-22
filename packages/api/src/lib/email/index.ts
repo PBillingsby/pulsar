@@ -1,29 +1,127 @@
 import { Resend } from 'resend'
-import type { DigestData } from '@/types/index'
+import type { DigestData, WeeklySnapshot } from '@/types/index'
 
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
+
+function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | null): string {
+  const recentSnapshots: WeeklySnapshot[] = snapshots.slice(1, 5).reverse()
+
+  const allPoints: { label: string; rate: number | null }[] = [
+    ...recentSnapshots.map((s: WeeklySnapshot) => ({
+      label: new Date(s.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      rate: s.comebackRate,
+    })),
+    { label: 'This week', rate: currentRate },
+  ]
+
+  const validRates: number[] = allPoints
+    .map((p: { label: string; rate: number | null }) => p.rate)
+    .filter((r): r is number => r !== null)
+
+  if (validRates.length < 2) return ''
+
+
+  const maxRate: number = Math.max(...validRates)
+  const maxBarHeight: number = 48
+
+  const bars: string = allPoints.map((point: { label: string; rate: number | null }, i: number) => {
+    const isLast: boolean = i === allPoints.length - 1
+    const rate: number = point.rate ?? 0
+    const height: number = maxRate > 0 ? Math.round((rate / maxRate) * maxBarHeight) : 4
+    const isEmpty: boolean = point.rate === null
+
+    const prevRate: number | null = i > 0 ? allPoints[i - 1].rate : null
+    const isDown: boolean = prevRate !== null && rate < prevRate
+    const barColor: string = isEmpty ? '#E5E7EB' : isLast && isDown ? '#EF4444' : isLast ? '#22C55E' : '#D1D5DB'
+    const rateColor: string = isEmpty ? '#9CA3AF' : isLast && isDown ? '#EF4444' : isLast ? '#22C55E' : '#6B7280'
+    const labelColor: string = isLast ? '#111111' : '#9CA3AF'
+    const fontWeight: string = isLast ? '700' : '400'
+
+    return `
+      <td align="center" style="padding:0 4px;vertical-align:bottom;">
+        <table cellpadding="0" cellspacing="0" align="center">
+          <tr>
+            <td align="center" style="padding-bottom:4px;">
+              <p style="margin:0;font-size:11px;font-weight:${fontWeight};color:${rateColor};">${isEmpty ? '—' : `${rate}%`}</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <div style="width:32px;height:${Math.max(height, 4)}px;background:${barColor};border-radius:4px 4px 0 0;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:6px;border-top:1px solid #E5E7EB;">
+              <p style="margin:0;font-size:9px;font-weight:${fontWeight};color:${labelColor};white-space:nowrap;">${point.label}</p>
+            </td>
+          </tr>
+        </table>
+      </td>`
+  }).join('')
+
+  return `
+    <tr>
+      <td style="background:#ffffff;padding:0 40px 28px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="background:#F9F7F2;border:1px solid #E8E4DC;border-radius:14px;padding:20px 24px;">
+              <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.12em;">4-Week Trend</p>
+              <table cellpadding="0" cellspacing="0" style="width:100%;">
+                <tr style="vertical-align:bottom;">
+                  ${bars}
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`
+}
 
 function renderEmail(digest: DigestData): string {
   const comebackDisplay: string = digest.comebackRate !== null
     ? `${digest.comebackRate}%`
     : 'Not enough data yet'
 
+  const trendValue: number | null = digest.comebackTrend
+    ? (digest.comebackTrend.startsWith('+')
+      ? parseInt(digest.comebackTrend)
+      : parseInt(digest.comebackTrend))
+    : null
+
+  const trendBg: string = trendValue === null ? '#F3F4F6'
+    : trendValue > 0 ? '#DCFCE7'
+      : trendValue >= -15 ? '#FEF9C3'
+        : '#FEE2E2'
+
+  const trendTextColor: string = trendValue === null ? '#6B7280'
+    : trendValue > 0 ? '#15803D'
+      : trendValue >= -15 ? '#854D0E'
+        : '#991B1B'
+
+  const comebackBg: string = trendValue === null ? 'linear-gradient(135deg,#FEF3C7 0%,#FFFBEB 100%)'
+    : trendValue > 0 ? 'linear-gradient(135deg,#DCFCE7 0%,#F0FDF4 100%)'
+      : trendValue >= -15 ? 'linear-gradient(135deg,#FEF9C3 0%,#FEFCE8 100%)'
+        : 'linear-gradient(135deg,#FEE2E2 0%,#FFF5F5 100%)'
+
+  const comebackBorder: string = trendValue === null ? '#FCD34D'
+    : trendValue > 0 ? '#86EFAC'
+      : trendValue >= -15 ? '#FDE047'
+        : '#FECACA'
+
+  const comebackLabelColor: string = trendValue === null ? '#92400E'
+    : trendValue > 0 ? '#166534'
+      : trendValue >= -15 ? '#713F12'
+        : '#991B1B'
+
   const trendHtml: string = digest.comebackTrend
     ? `<tr><td style="padding: 6px 0 0;">
-        <span style="display:inline-block;background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;">${digest.comebackTrend}</span>
-       </td></tr>`
+      <span style="display:inline-block;background:${trendBg};color:${trendTextColor};font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;">${digest.comebackTrend}</span>
+     </td></tr>`
     : ''
 
   const topPageDisplay: string = digest.topPage || 'homepage'
-
-  const pulsarMark: string = `
-    <table cellpadding="0" cellspacing="0" style="display:inline-table;">
-      <tr>
-        <td style="width:28px;height:28px;background:#111;border-radius:50%;border:2px solid #22C55E;text-align:center;vertical-align:middle;position:relative;">
-          <div style="width:6px;height:6px;background:#F59E0B;border-radius:50%;display:inline-block;"></div>
-        </td>
-      </tr>
-    </table>`
+  const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -36,7 +134,7 @@ function renderEmail(digest: DigestData): string {
 
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#EEEAE3;padding:40px 16px;">
   <tr><td align="center">
-  <table width="600" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
+  <table cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
 
     <!-- ── HEADER ─────────────────────────────────── -->
     <tr>
@@ -44,14 +142,7 @@ function renderEmail(digest: DigestData): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="vertical-align:middle;">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="vertical-align:middle;padding-right:10px;">${pulsarMark}</td>
-                  <td style="vertical-align:middle;">
-                    <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;">PULSAR</p>
-                  </td>
-                </tr>
-              </table>
+              <p style="margin:0;font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">PULSAR<span style="display:inline-block;width:6px;height:6px;background:#22C55E;border-radius:50%;margin-left:4px;vertical-align:middle;margin-bottom:3px;"></span></p>
             </td>
             <td align="right" style="vertical-align:middle;">
               <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.02em;">${digest.date}</p>
@@ -64,7 +155,7 @@ function renderEmail(digest: DigestData): string {
     <!-- ── TODAY'S PULSE ──────────────────────────── -->
     <tr>
       <td style="background:#ffffff;padding:32px 40px 24px;">
-        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">Today's Pulse</p>
+        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">Weekly Signal</p>
         <p style="margin:0;font-size:22px;font-weight:500;color:#111111;line-height:1.45;">${digest.summary}</p>
       </td>
     </tr>
@@ -74,22 +165,16 @@ function renderEmail(digest: DigestData): string {
       <td style="background:#ffffff;padding:0 40px 28px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td style="background:linear-gradient(135deg,#FEF3C7 0%,#FFFBEB 100%);border:1px solid #FCD34D;border-radius:14px;padding:28px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
+            <td style="background:${comebackBg};border:1px solid ${comebackBorder};border-radius:14px;padding:28px 32px;">
+              <p style="margin:0;font-size:10px;font-weight:700;color:${comebackLabelColor};text-transform:uppercase;letter-spacing:0.12em;">Comeback Rate</p>
+              <table cellpadding="0" cellspacing="0">
                 <tr>
-                  <td>
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:0.12em;">Comeback Rate</p>
-                    <table cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="vertical-align:bottom;padding-right:12px;">
-                          <p style="margin:10px 0 0;font-size:72px;font-weight:800;color:#111111;line-height:1;letter-spacing:-3px;">${comebackDisplay}</p>
-                          ${trendHtml}
-                        </td>
-                        <td style="vertical-align:bottom;padding-bottom:6px;">
-                          <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">of visitors<br/>returned</p>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="vertical-align:bottom;padding-right:12px;">
+                    <p style="margin:10px 0 0;font-size:72px;font-weight:800;color:#111111;line-height:1;letter-spacing:-3px;">${comebackDisplay}</p>
+                    ${trendHtml}
+                  </td>
+                  <td style="vertical-align:bottom;padding-bottom:6px;">
+                    <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">${digest.returning} of ${digest.totalVisitors} visitors returned</p>
                   </td>
                 </tr>
               </table>
@@ -98,6 +183,7 @@ function renderEmail(digest: DigestData): string {
         </table>
       </td>
     </tr>
+    ${trendChart}
 
     <!-- ── INSIGHT ────────────────────────────────── -->
     <tr>
@@ -168,7 +254,7 @@ function renderEmail(digest: DigestData): string {
               </p>
             </td>
             <td align="right" style="vertical-align:middle;">
-              ${pulsarMark}
+              <p style="margin:0;font-size:13px;font-weight:800;color:#BBBBBB;letter-spacing:-0.3px;">PULSAR<span style="display:inline-block;width:5px;height:5px;background:#22C55E;border-radius:50%;margin-left:3px;vertical-align:middle;margin-bottom:2px;"></span></p>
             </td>
           </tr>
         </table>

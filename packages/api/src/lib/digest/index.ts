@@ -66,5 +66,6 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     topPage: topPagePath,
     returning,
     insight,
+    snapshots,
   }
 }

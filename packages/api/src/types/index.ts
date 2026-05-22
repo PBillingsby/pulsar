@@ -58,6 +58,7 @@ export interface DigestData {
   topPage: string
   returning: number
   insight: string
+  snapshots: WeeklySnapshot[]
 }
 
 export interface RegisterProjectInput {
