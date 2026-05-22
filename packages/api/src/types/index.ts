@@ -53,6 +53,7 @@ export interface DigestData {
   date: string
   summary: string
   comebackRate: number | null
+  comebackTrend: string | null
   totalVisitors: number
   topPage: string
   returning: number
@@ -76,4 +77,29 @@ export interface FilterResult {
   passed: IncomingEvent[]
   dropped: number
   reasons: string[]
+}
+
+export interface WeeklySnapshot {
+  projectKey: string
+  weekStart: Date
+  totalVisitors: number
+  returning: number
+  comebackRate: number | null
+  topPage: string | null
+  totalEvents: number
+}
+
+export interface BehavioralPatterns {
+  returnerTopPage: string | null
+  bouncerTopPage: string | null
+  activationPage: string | null
+  avgDepthReturners: number
+  avgDepthBouncers: number
+  returnerFirstPages: { url: string; count: number }[]
+}
+
+export interface DigestContext {
+  current: PulsarStats
+  snapshots: WeeklySnapshot[]
+  patterns: BehavioralPatterns
 }
