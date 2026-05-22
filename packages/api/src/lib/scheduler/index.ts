@@ -1,8 +1,8 @@
 import cron from 'node-cron'
 import { prisma } from '@/db/client'
-import { getStats } from '@/lib/analytics/index'
-import { generateDigest } from '@/lib/digest/index'
+import { buildDigest } from '@/lib/digest/index'
 import { sendDigest } from '@/lib/email/index'
+import type { DigestData } from '@/types/index'
 
 async function runDailyDigest(): Promise<void> {
   console.log('[Pulsar] Running daily digest...')
@@ -12,7 +12,7 @@ async function runDailyDigest(): Promise<void> {
   })
 
   if (projects.length === 0) {
-    console.log('[Pulsar] No projects to send digest for.')
+    console.log('[Pulsar] No projects found.')
     return
   }
 
@@ -20,30 +20,23 @@ async function runDailyDigest(): Promise<void> {
 
   const results = await Promise.allSettled(
     projects.map(async (project) => {
-      const stats = await getStats(project.projectKey)
-      const digest = generateDigest(stats)
+      const digest: DigestData = await buildDigest(project.projectKey)
       await sendDigest(project.email, digest)
-      console.log(`[Pulsar] Digest sent to ${project.email} for ${project.projectKey}`)
+      console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)
     })
   )
 
   const failed = results.filter((r) => r.status === 'rejected')
   if (failed.length > 0) {
-    console.error(`[Pulsar] ${failed.length} digest(s) failed to send`)
-    failed.forEach((r) => {
-      if (r.status === 'rejected') console.error(r.reason)
-    })
+    console.error(`[Pulsar] ${failed.length} digest(s) failed`)
+    failed.forEach((r) => { if (r.status === 'rejected') console.error(r.reason) })
   }
 
-  console.log('[Pulsar] Daily digest complete.')
+  console.log('[Pulsar] Done.')
 }
 
 export function startScheduler(): void {
-  // runs every day at 8am UTC
-  cron.schedule('0 8 * * *', () => {
-    runDailyDigest().catch(console.error)
-  })
-
+  cron.schedule('0 8 * * *', () => { runDailyDigest().catch(console.error) })
   console.log('[Pulsar] Scheduler started — digest runs daily at 8am UTC')
 }
 
