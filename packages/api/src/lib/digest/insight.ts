@@ -147,23 +147,58 @@ Write exactly 3 sentences. Rules:
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }
 
+function generateRuleBasedInsight(ctx: DigestContext): string {
+  const { current, snapshots }: DigestContext = ctx
+
+  const previousWeek: WeeklySnapshot | undefined = snapshots.find(
+    (s: WeeklySnapshot, i: number) => i > 0 && s.comebackRate !== null
+  )
+
+  const comebackDelta: number | null = previousWeek?.comebackRate != null && current.comebackRate != null
+    ? current.comebackRate - previousWeek.comebackRate
+    : null
+
+  const trendPart: string = comebackDelta === null
+    ? `Your comeback rate is ${current.comebackRate !== null ? `${current.comebackRate}%` : 'not yet available'} this week.`
+    : comebackDelta > 0
+      ? `Your comeback rate rose ${comebackDelta} points to ${current.comebackRate}% this week, continuing a positive trend.`
+      : comebackDelta < 0
+        ? `Your comeback rate fell ${Math.abs(comebackDelta)} points to ${current.comebackRate}% this week.`
+        : `Your comeback rate held steady at ${current.comebackRate}% this week.`
+
+  const activationPart: string = snapshots[0]?.activationPage
+    ? `Users who reach ${snapshots[0].activationPage} appear more likely to return than those who do not.`
+    : current.topPages[0]?.url
+      ? `Most activity this week is concentrated on ${current.topPages[0].url}.`
+      : 'No clear activation pattern detected yet.'
+
+  const actionPart: string = comebackDelta !== null && comebackDelta < -10
+    ? `Investigate what changed this week in your onboarding or activation flow.`
+    : comebackDelta !== null && comebackDelta > 5
+      ? `Keep doing what you're doing — double down on whatever drove this week's improvement.`
+      : `Keep driving traffic and watch whether the pattern holds next week.`
+
+  return `${trendPart} ${activationPart} ${actionPart}`
+}
+
 export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
   if (ctx.current.totalVisitors < 3) {
     return 'Not enough visitors yet to surface meaningful patterns. Keep driving traffic and check back tomorrow.'
   }
 
   try {
-    const message = await client.messages.create({
+    const message: Anthropic.Message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
-      messages: [{ role: 'user', content: buildPrompt(ctx) }],
+      messages: [{ role: 'user' as const, content: buildPrompt(ctx) }],
     })
 
-    const block = message.content[0]
-    if (block.type !== 'text') return 'Unable to generate insight.'
-    return block.text.trim()
+    const block: Anthropic.ContentBlock = message.content[0]
+    if (block.type !== 'text') return generateRuleBasedInsight(ctx)
+    const textBlock: Anthropic.TextBlock = block as Anthropic.TextBlock
+    return textBlock.text.trim()
   } catch (err: unknown) {
-    console.error('[Pulsar] LLM insight failed:', err)
-    return 'Insight generation unavailable right now.'
+    console.error('[Pulsar] LLM insight failed, using rule-based fallback:', err)
+    return generateRuleBasedInsight(ctx)
   }
 }
