@@ -102,10 +102,22 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
   })
 }
 
-export async function getRecentSnapshots(projectKey: string, weeks: number = 5): Promise<WeeklySnapshot[]> {
+export async function getRecentSnapshots(projectKey: string, weeks: number = 8): Promise<WeeklySnapshot[]> {
   return prisma.weeklySnapshot.findMany({
     where: { projectKey },
     orderBy: { weekStart: 'desc' },
     take: weeks,
   }) as Promise<WeeklySnapshot[]>
+}
+
+export async function cleanupOldSnapshots(projectKey: string, keepWeeks: number = 12): Promise<void> {
+  const cutoff: Date = new Date()
+  cutoff.setUTCDate(cutoff.getUTCDate() - keepWeeks * 7)
+
+  await prisma.weeklySnapshot.deleteMany({
+    where: {
+      projectKey,
+      weekStart: { lt: cutoff },
+    },
+  })
 }
