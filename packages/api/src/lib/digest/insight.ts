@@ -137,11 +137,13 @@ FUNNEL COMPLETION:
 ${funnelContext}
 
 Write exactly 3 sentences. Rules:
-- Sentence 1: State the comeback rate change. If funnel completion rate also changed in the same direction, state both together as likely related. If funnel completion held but comeback dropped, explicitly say the problem appears post-activation.
-- Sentence 2: State the single most important signal from the funnel or pattern data. Use hedged language: "appears to", "suggests", "may indicate". Prioritise funnel completion over entry point shifts.
-- Sentence 3: Give one specific investigation or action based on the funnel data, not just the comeback rate.
-- Never claim causation. Correlation and funnel completion only.
+- Sentence 1: State the comeback rate change factually. If funnel completion data exists and also dropped, state both as likely related. If funnel data is missing, say so explicitly and name the activation page as the unknown variable.
+- Sentence 2: State the most diagnostic signal available. Prioritise in this order: (1) funnel completion change, (2) returner depth change, (3) activation page pattern. Use precise metric language — "returning cohort size", "activation-to-return conversion", "session depth among returners". Avoid vague phrases like "who is choosing to return".
+- Sentence 3: State one primary hypothesis and one concrete investigation step. The hypothesis must reference the activation page by name if one exists. Do not offer multiple soft hypotheses — pick the most likely one based on available data.
+- Structure your reasoning as: retention change → activation rate status → engagement quality among returners → primary hypothesis.
+- Never claim causation. Use "suggests", "appears", "may indicate".
 - Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
+- page depth does not equal activation quality — acknowledge this if using depth as a signal.
 - If data volume is low, note it in sentence 1.
 - Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
@@ -178,7 +180,7 @@ function generateRuleBasedInsight(ctx: DigestContext): string {
       ? `Keep doing what you're doing — double down on whatever drove this week's improvement.`
       : `Keep driving traffic and watch whether the pattern holds next week.`
 
-  return `${trendPart} ${activationPart} ${actionPart}`
+  return `${trendPart} ${activationPart} ${actionPart} `
 }
 
 export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
