@@ -74,3 +74,17 @@ model WeeklySnapshot {
   @@unique([projectKey, weekStart])
   @@index([projectKey])
 }
+
+model DigestFailure {
+  id         String   @id @default(cuid())
+  projectKey String
+  email      String
+  reason     String
+  attempts   Int      @default(1)
+  resolved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([projectKey])
+  @@index([resolved])
+}
