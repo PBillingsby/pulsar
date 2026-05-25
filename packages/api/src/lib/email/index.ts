@@ -230,9 +230,10 @@ function renderEmail(digest: DigestData): string {
             <td width="33%" style="padding-left:6px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="background:#F4F4F0;border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">Top Page</p>
-                    <p style="margin:6px 0 0;font-size:18px;font-weight:800;color:#111111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${topPageDisplay}</p>
+                  <td style="background:${digest.isActivationPage ? '#FFF7ED' : '#F4F4F0'};border:${digest.isActivationPage ? '1px solid #FED7AA' : 'none'};border-radius:10px;padding:18px 20px;">
+                    <p style="margin:0;font-size:10px;font-weight:700;color:${digest.isActivationPage ? '#C2410C' : '#999'};text-transform:uppercase;letter-spacing:0.1em;">${digest.isActivationPage ? 'Key Page' : 'Top Page'}</p>
+                    <p style="margin:6px 0 0;font-size:18px;font-weight:800;color:#111111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${digest.keyPage || 'homepage'}</p>
+                    ${digest.isActivationPage ? `<p style="margin:4px 0 0;font-size:10px;color:#C2410C;">returners visit this</p>` : ''}
                   </td>
                 </tr>
               </table>

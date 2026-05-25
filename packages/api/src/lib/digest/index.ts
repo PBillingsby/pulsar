@@ -5,7 +5,7 @@ import { captureWeeklySnapshot, getRecentSnapshots } from '@/lib/analytics/snaps
 import { generateLLMInsight } from '@/lib/digest/insight'
 import type { DigestData, DigestContext, PulsarStats, WeeklySnapshot, BehavioralPatterns } from '@/types/index'
 
-function getTopPage(url: string): string {
+function getPathFromUrl(url: string): string {
   try {
     const parsed: URL = new URL(url)
     return parsed.pathname === '/' ? 'homepage' : parsed.pathname
@@ -15,7 +15,6 @@ function getTopPage(url: string): string {
 }
 
 export async function buildDigest(projectKey: string): Promise<DigestData> {
-  // capture snapshot for this week before generating
   await captureWeeklySnapshot(projectKey)
 
   const [current, snapshots, patterns]: [PulsarStats, WeeklySnapshot[], BehavioralPatterns] = await Promise.all([
@@ -27,9 +26,17 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
   const ctx: DigestContext = { current, snapshots, patterns }
   const insight: string = await generateLLMInsight(ctx)
 
-  const returning: number = snapshots[0]?.returning ?? current.recentSessions.filter((s) => s.returned).length
-  const topPage: string = current.topPages[0]?.url ?? ''
-  const topPagePath: string = topPage ? getTopPage(topPage) : ''
+  const returningCount: number = Math.round(
+    current.totalVisitors * ((current.comebackRate ?? 0) / 100)
+  )
+  const returning: number = returningCount
+
+  const activationUrl: string | null = patterns.activationPage
+  const topUrl: string = current.topPages[0]?.url ?? ''
+
+  const keyPageUrl: string = activationUrl ?? topUrl
+  const keyPagePath: string = keyPageUrl ? getPathFromUrl(keyPageUrl) : ''
+  const isActivationPage: boolean = activationUrl !== null
 
   const lines: string[] = []
   if (current.totalVisitors === 0) {
@@ -41,19 +48,24 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     } else {
       lines.push('No one has returned yet.')
     }
-    if (topPagePath) {
-      lines.push(`Most visited: ${topPagePath}.`)
+    if (keyPagePath) {
+      const pageLabel: string = isActivationPage
+        ? `Users who reach ${keyPagePath} are significantly more likely to return.`
+        : `Most visited: ${keyPagePath}.`
+      lines.push(pageLabel)
     }
   }
 
-  // comeback trend
-  const previousSnapshot: WeeklySnapshot | undefined = snapshots[1]
+  const previousSnapshot: WeeklySnapshot | undefined = snapshots.find(
+    (s: WeeklySnapshot, i: number) => i > 0 && s.comebackRate !== null
+  )
+
   let comebackTrend: string | null = null
   if (previousSnapshot?.comebackRate != null && current.comebackRate != null) {
     const diff: number = current.comebackRate - previousSnapshot.comebackRate
-    if (diff > 0) comebackTrend = `+${diff}% vs last week`
-    else if (diff < 0) comebackTrend = `${diff}% vs last week`
-    else comebackTrend = 'unchanged from last week'
+    if (diff > 0) comebackTrend = `+${diff}pts vs last week`
+    else if (diff < 0) comebackTrend = `${diff}pts vs last week`
+    else comebackTrend = 'unchanged vs last week'
   }
 
   return {
@@ -63,7 +75,9 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     comebackRate: current.comebackRate,
     comebackTrend,
     totalVisitors: current.totalVisitors,
-    topPage: topPagePath,
+    keyPage: keyPagePath,
+    isActivationPage,
+    topPage: keyPagePath,
     returning,
     insight,
     snapshots,

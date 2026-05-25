@@ -56,6 +56,8 @@ export interface DigestData {
   comebackTrend: string | null
   totalVisitors: number
   topPage: string
+  keyPage: string
+  isActivationPage: boolean
   returning: number
   insight: string
   snapshots: WeeklySnapshot[]
