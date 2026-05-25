@@ -14,17 +14,9 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
   const weekEnd: Date = new Date(weekStart)
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7)
 
-  const [pageViews, sessionData, topPages, patterns]: [
-    number,
-    {
-      sessionId: string
-      _count: { sessionId: number }
-      _min: { timestamp: Date | null }
-      _max: { timestamp: Date | null }
-    }[],
-    { url: string; _count: { url: number } }[],
-    BehavioralPatterns
-  ] = await Promise.all([
+  const patterns: BehavioralPatterns = await detectPatterns(projectKey)
+
+  const [pageViews, sessionData, topPages, activationSessions] = await Promise.all([
     prisma.event.count({
       where: { projectKey, type: 'page_view', timestamp: { gte: weekStart, lt: weekEnd } },
     }),
@@ -42,7 +34,18 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
       orderBy: { _count: { url: 'desc' } },
       take: 1,
     }),
-    detectPatterns(projectKey),
+    patterns.activationPage
+      ? prisma.event.groupBy({
+        by: ['sessionId'],
+        where: {
+          projectKey,
+          type: 'page_view',
+          url: patterns.activationPage,
+          timestamp: { gte: weekStart, lt: weekEnd },
+        },
+        _count: { sessionId: true },
+      })
+      : Promise.resolve([]),
   ])
 
   const totalVisitors: number = sessionData.length
@@ -54,9 +57,12 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
   }).length
 
   const comebackRate: number | null = totalVisitors >= 10
-    ? returning > 0
-      ? Math.round((returning / totalVisitors) * 100)
-      : null
+    ? returning > 0 ? Math.round((returning / totalVisitors) * 100) : null
+    : null
+
+  const activationPageViews: number = activationSessions.length
+  const activationReachRate: number | null = totalVisitors > 0 && activationPageViews > 0
+    ? Math.round((activationPageViews / totalVisitors) * 100)
     : null
 
   await prisma.weeklySnapshot.upsert({
@@ -73,6 +79,8 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
       returnerTopPage: patterns.returnerTopPage,
       bouncerTopPage: patterns.bouncerTopPage,
       returnerFirstPage: patterns.returnerFirstPages[0]?.url ?? null,
+      activationReachRate,
+      activationPageViews,
     },
     create: {
       projectKey,
@@ -88,6 +96,8 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
       returnerTopPage: patterns.returnerTopPage,
       bouncerTopPage: patterns.bouncerTopPage,
       returnerFirstPage: patterns.returnerFirstPages[0]?.url ?? null,
+      activationReachRate,
+      activationPageViews,
     },
   })
 }

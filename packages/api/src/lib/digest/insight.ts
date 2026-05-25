@@ -19,6 +19,7 @@ function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
       `Week of ${week}:`,
       `comeback ${s.comebackRate}%`,
       s.activationPage ? `activation page ${s.activationPage}` : 'no activation page',
+      s.activationReachRate !== null ? `activation reach ${s.activationReachRate}%` : '',
       s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
       s.returnerFirstPage ? `returners start on ${s.returnerFirstPage}` : '',
     ].filter(Boolean)
@@ -29,9 +30,7 @@ function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
 }
 
 function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
-  const valid: WeeklySnapshot[] = snapshots
-    .filter((s: WeeklySnapshot) => s.comebackRate !== null)
-
+  const valid: WeeklySnapshot[] = snapshots.filter((s: WeeklySnapshot) => s.comebackRate !== null)
   if (valid.length < 2) return 'Not enough history to detect changes.'
 
   const current: WeeklySnapshot = valid[0]
@@ -46,6 +45,16 @@ function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
       changes.push(`A new activation page emerged this week: ${current.activationPage}`)
     } else if (!current.activationPage && previous.activationPage) {
       changes.push(`The activation page signal (${previous.activationPage}) disappeared this week`)
+    }
+  }
+
+  // funnel completion rate change
+  if (current.activationReachRate !== null && previous.activationReachRate !== null) {
+    const funnelDelta: number = current.activationReachRate - previous.activationReachRate
+    if (Math.abs(funnelDelta) >= 5) {
+      changes.push(
+        `Activation completion rate (% of sessions reaching ${current.activationPage ?? 'activation page'}) ${funnelDelta > 0 ? 'rose' : 'fell'} from ${previous.activationReachRate}% to ${current.activationReachRate}%`
+      )
     }
   }
 
@@ -69,6 +78,20 @@ function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
     : 'Behavioral patterns are consistent with last week.'
 }
 
+function buildFunnelContext(snapshots: WeeklySnapshot[]): string {
+  const current: WeeklySnapshot | undefined = snapshots[0]
+  const previous: WeeklySnapshot | undefined = snapshots.find(
+    (s: WeeklySnapshot, i: number) => i > 0 && s.activationReachRate !== null
+  )
+
+  if (!current?.activationReachRate || !previous?.activationReachRate) {
+    return 'No funnel comparison data available yet.'
+  }
+
+  const delta: number = current.activationReachRate - previous.activationReachRate
+  return `${current.activationReachRate}% of sessions reached ${current.activationPage ?? 'activation page'} this week vs ${previous.activationReachRate}% last week (${delta > 0 ? '+' : ''}${delta} points)`
+}
+
 function buildPrompt(ctx: DigestContext): string {
   const { current, snapshots } = ctx
 
@@ -87,6 +110,7 @@ function buildPrompt(ctx: DigestContext): string {
 
   const patternHistory: string = buildPatternHistory(snapshots)
   const patternChanges: string = detectPatternChanges(snapshots)
+  const funnelContext: string = buildFunnelContext(snapshots)
 
   const dataVolume: string = current.totalVisitors < 20
     ? 'low (under 20 visitors — treat as directional only)'
@@ -94,7 +118,7 @@ function buildPrompt(ctx: DigestContext): string {
       ? 'moderate (20-50 visitors — patterns emerging but not statistically reliable)'
       : 'sufficient (50+ visitors — patterns are meaningful)'
 
-  return `You are a careful product analyst writing a weekly digest for an early-stage founder. Your job is to reason about what changed this week and why it might have happened — not just describe the current state.
+  return `You are a careful product analyst writing a weekly digest for an early-stage founder. Reason about what changed this week and why — prioritise funnel completion data over entry point speculation.
 
 DATA VOLUME: ${dataVolume}
 
@@ -109,13 +133,16 @@ ${patternHistory}
 WHAT CHANGED THIS WEEK VS LAST WEEK:
 ${patternChanges}
 
+FUNNEL COMPLETION:
+${funnelContext}
+
 Write exactly 3 sentences. Rules:
-- Sentence 1: State what happened to the comeback rate this week and whether the pattern changes explain it. Be specific about numbers and page names.
-- Sentence 2: Based on the pattern history, identify the single most important signal — something that changed, emerged, or disappeared that a founder should pay attention to. Use hedged language: "appears to", "suggests", "may indicate".
-- Sentence 3: Give one specific investigation or action for this week based on the pattern changes, not just the comeback rate number.
-- Never claim causation. Correlation only.
+- Sentence 1: State the comeback rate change. If funnel completion rate also changed in the same direction, state both together as likely related. If funnel completion held but comeback dropped, explicitly say the problem appears post-activation.
+- Sentence 2: State the single most important signal from the funnel or pattern data. Use hedged language: "appears to", "suggests", "may indicate". Prioritise funnel completion over entry point shifts.
+- Sentence 3: Give one specific investigation or action based on the funnel data, not just the comeback rate.
+- Never claim causation. Correlation and funnel completion only.
 - Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
-- If data volume is low, note it briefly in sentence 1.
+- If data volume is low, note it in sentence 1.
 - Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }

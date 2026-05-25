@@ -65,6 +65,10 @@ model WeeklySnapshot {
   bouncerTopPage      String?
   returnerFirstPage   String?
 
+  // funnel completion fields
+  activationReachRate Float?
+  activationPageViews Int?
+
   createdAt           DateTime @default(now())
 
   @@unique([projectKey, weekStart])

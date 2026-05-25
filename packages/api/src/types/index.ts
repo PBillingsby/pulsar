@@ -97,6 +97,8 @@ export interface WeeklySnapshot {
   returnerTopPage: string | null
   bouncerTopPage: string | null
   returnerFirstPage: string | null
+  activationReachRate: number | null
+  activationPageViews: number | null
   createdAt: Date
 }
 
