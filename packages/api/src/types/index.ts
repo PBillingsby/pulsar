@@ -83,6 +83,7 @@ export interface FilterResult {
 }
 
 export interface WeeklySnapshot {
+  id: string
   projectKey: string
   weekStart: Date
   totalVisitors: number
@@ -90,6 +91,13 @@ export interface WeeklySnapshot {
   comebackRate: number | null
   topPage: string | null
   totalEvents: number
+  activationPage: string | null
+  avgDepthReturners: number | null
+  avgDepthBouncers: number | null
+  returnerTopPage: string | null
+  bouncerTopPage: string | null
+  returnerFirstPage: string | null
+  createdAt: Date
 }
 
 export interface BehavioralPatterns {

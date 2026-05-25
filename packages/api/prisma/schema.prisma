@@ -48,15 +48,24 @@ model Project {
 }
 
 model WeeklySnapshot {
-  id            String   @id @default(cuid())
-  projectKey    String
-  weekStart     DateTime
-  totalVisitors Int
-  returning     Int
-  comebackRate  Float?
-  topPage       String?
-  totalEvents   Int
-  createdAt     DateTime @default(now())
+  id                  String   @id @default(cuid())
+  projectKey          String
+  weekStart           DateTime
+  totalVisitors       Int
+  returning           Int
+  comebackRate        Float?
+  topPage             String?
+  totalEvents         Int
+
+  // behavioral pattern fields
+  activationPage      String?
+  avgDepthReturners   Float?
+  avgDepthBouncers    Float?
+  returnerTopPage     String?
+  bouncerTopPage      String?
+  returnerFirstPage   String?
+
+  createdAt           DateTime @default(now())
 
   @@unique([projectKey, weekStart])
   @@index([projectKey])

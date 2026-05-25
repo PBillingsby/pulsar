@@ -5,68 +5,117 @@ const client: Anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-function buildPrompt(ctx: DigestContext): string {
-  const { current, snapshots, patterns }: DigestContext = ctx
+function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
+  const validSnapshots: WeeklySnapshot[] = snapshots
+    .filter((s: WeeklySnapshot) => s.comebackRate !== null)
+    .slice(0, 4)
+    .reverse()
 
-  const trendLine: string = snapshots.length > 1
-    ? snapshots
-      .slice()
-      .reverse()
-      .map((s: WeeklySnapshot) => s.comebackRate !== null ? `${s.comebackRate}%` : 'n/a')
-      .join(' → ')
-    : 'no trend data yet'
+  if (validSnapshots.length < 2) return 'Insufficient history to detect pattern changes.'
+
+  const lines: string[] = validSnapshots.map((s: WeeklySnapshot) => {
+    const week: string = new Date(s.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const parts: string[] = [
+      `Week of ${week}:`,
+      `comeback ${s.comebackRate}%`,
+      s.activationPage ? `activation page ${s.activationPage}` : 'no activation page',
+      s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
+      s.returnerFirstPage ? `returners start on ${s.returnerFirstPage}` : '',
+    ].filter(Boolean)
+    return parts.join(', ')
+  })
+
+  return lines.join('\n')
+}
+
+function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
+  const valid: WeeklySnapshot[] = snapshots
+    .filter((s: WeeklySnapshot) => s.comebackRate !== null)
+
+  if (valid.length < 2) return 'Not enough history to detect changes.'
+
+  const current: WeeklySnapshot = valid[0]
+  const previous: WeeklySnapshot = valid[1]
+  const changes: string[] = []
+
+  // activation page change
+  if (current.activationPage !== previous.activationPage) {
+    if (current.activationPage && previous.activationPage) {
+      changes.push(`Activation page shifted from ${previous.activationPage} to ${current.activationPage}`)
+    } else if (current.activationPage && !previous.activationPage) {
+      changes.push(`A new activation page emerged this week: ${current.activationPage}`)
+    } else if (!current.activationPage && previous.activationPage) {
+      changes.push(`The activation page signal (${previous.activationPage}) disappeared this week`)
+    }
+  }
+
+  // session depth change for returners
+  if (current.avgDepthReturners !== null && previous.avgDepthReturners !== null) {
+    const depthDelta: number = current.avgDepthReturners - previous.avgDepthReturners
+    if (Math.abs(depthDelta) >= 1) {
+      changes.push(`Returning user session depth ${depthDelta > 0 ? 'increased' : 'decreased'} by ${Math.abs(depthDelta).toFixed(1)} pages`)
+    }
+  }
+
+  // returner entry point change
+  if (current.returnerFirstPage !== previous.returnerFirstPage) {
+    if (current.returnerFirstPage && previous.returnerFirstPage) {
+      changes.push(`Returning users now most commonly start on ${current.returnerFirstPage} instead of ${previous.returnerFirstPage}`)
+    }
+  }
+
+  return changes.length > 0
+    ? changes.join('. ')
+    : 'Behavioral patterns are consistent with last week.'
+}
+
+function buildPrompt(ctx: DigestContext): string {
+  const { current, snapshots } = ctx
 
   const previousWeek: WeeklySnapshot | undefined = snapshots.find(
     (s: WeeklySnapshot, i: number) => i > 0 && s.comebackRate !== null
   )
+
   const comebackDelta: number | null = previousWeek?.comebackRate != null && current.comebackRate != null
     ? current.comebackRate - previousWeek.comebackRate
     : null
 
-  const trendContext: string = comebackDelta !== null
-    ? `${comebackDelta > 0 ? `UP ${comebackDelta} points` : `DOWN ${Math.abs(comebackDelta)} points'`} vs last week (${previousWeek?.comebackRate}%)`
-    : 'no previous week to compare'
+  const trendDirection: string = comebackDelta === null ? 'no comparison available'
+    : comebackDelta > 0 ? `UP ${comebackDelta} points from ${previousWeek?.comebackRate}% last week`
+      : comebackDelta < 0 ? `DOWN ${Math.abs(comebackDelta)} points from ${previousWeek?.comebackRate}% last week`
+        : 'unchanged from last week'
 
-  const activationContext: string = patterns.activationPage
-    ? `Users who reach ${patterns.activationPage} appear more likely to return — returning users visit it consistently while one-time visitors rarely do. This is correlational, not confirmed causation.`
-    : 'No clear activation page pattern detected yet.'
-
-  const depthContext: string = patterns.avgDepthReturners > 0
-    ? `Returning users explore ${patterns.avgDepthReturners} pages per session on average versus ${patterns.avgDepthBouncers} for one-time visitors.`
-    : ''
-
-  const firstPageContext: string = patterns.returnerFirstPages.length > 0
-    ? `Returning users most commonly start on: ${patterns.returnerFirstPages.map((p: { url: string; count: number }) => `${p.url} (${p.count} sessions)`).join(', ')}.`
-    : ''
+  const patternHistory: string = buildPatternHistory(snapshots)
+  const patternChanges: string = detectPatternChanges(snapshots)
 
   const dataVolume: string = current.totalVisitors < 20
     ? 'low (under 20 visitors — treat as directional only)'
     : current.totalVisitors < 50
-      ? 'moderate (20-50 visitors — patterns are emerging but not yet statistically reliable)'
+      ? 'moderate (20-50 visitors — patterns emerging but not statistically reliable)'
       : 'sufficient (50+ visitors — patterns are meaningful)'
 
-  return `You are a careful product analyst writing a weekly digest for an early-stage founder. Your job is to surface what the data actually shows — not what you think might be true.
+  return `You are a careful product analyst writing a weekly digest for an early-stage founder. Your job is to reason about what changed this week and why it might have happened — not just describe the current state.
 
 DATA VOLUME: ${dataVolume}
 
-CURRENT WEEK:
+THIS WEEK:
 - Comeback rate: ${current.comebackRate !== null ? `${current.comebackRate}%` : 'insufficient data'}
-- Trend: ${trendContext}
-- 4-week history: ${trendLine}
+- Trend: ${trendDirection}
 - Total visitors: ${current.totalVisitors}
 
-BEHAVIORAL PATTERNS (last 30 days):
-- ${activationContext}
-- ${depthContext}
-- ${firstPageContext}
+PATTERN HISTORY (oldest to newest):
+${patternHistory}
+
+WHAT CHANGED THIS WEEK VS LAST WEEK:
+${patternChanges}
 
 Write exactly 3 sentences. Rules:
-- Sentence 1: State the comeback rate and trend direction factually. Use measured language — "fell", "rose", "held steady" not "crashed" or "surged".
-- Sentence 2: State the most interesting behavioral pattern from the data. Use hedged language — "appears to", "suggests", "users who reach X tend to" not "X is the reason" or "X causes".
-- Sentence 3: Give one specific, actionable thing to investigate or double down on this week based on the data.
-- Never use the words "strongly", "clearly", "obviously", "definitely", "critical", or "proof".
+- Sentence 1: State what happened to the comeback rate this week and whether the pattern changes explain it. Be specific about numbers and page names.
+- Sentence 2: Based on the pattern history, identify the single most important signal — something that changed, emerged, or disappeared that a founder should pay attention to. Use hedged language: "appears to", "suggests", "may indicate".
+- Sentence 3: Give one specific investigation or action for this week based on the pattern changes, not just the comeback rate number.
 - Never claim causation. Correlation only.
-- If data volume is low, open sentence 1 with a note that patterns are directional given the sample size.
+- Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
+- If data volume is low, note it briefly in sentence 1.
 - Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }
@@ -79,13 +128,8 @@ export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
   try {
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      messages: [
-        {
-          role: 'user',
-          content: buildPrompt(ctx),
-        },
-      ],
+      max_tokens: 250,
+      messages: [{ role: 'user', content: buildPrompt(ctx) }],
     })
 
     const block = message.content[0]
