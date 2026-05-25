@@ -16,50 +16,59 @@ function buildPrompt(ctx: DigestContext): string {
       .join(' → ')
     : 'no trend data yet'
 
-  const previousWeek: WeeklySnapshot | undefined = snapshots[1]
+  const previousWeek: WeeklySnapshot | undefined = snapshots.find(
+    (s: WeeklySnapshot, i: number) => i > 0 && s.comebackRate !== null
+  )
   const comebackDelta: number | null = previousWeek?.comebackRate != null && current.comebackRate != null
     ? current.comebackRate - previousWeek.comebackRate
     : null
 
   const trendContext: string = comebackDelta !== null
-    ? `${comebackDelta > 0 ? `UP ${comebackDelta} points` : `DOWN ${Math.abs(comebackDelta)} points`} vs last week (${previousWeek?.comebackRate}%)`
+    ? `${comebackDelta > 0 ? `UP ${comebackDelta} points` : `DOWN ${Math.abs(comebackDelta)} points'`} vs last week (${previousWeek?.comebackRate}%)`
     : 'no previous week to compare'
 
   const activationContext: string = patterns.activationPage
-    ? `The page that most separates returners from bouncers is ${patterns.activationPage}. Returning users visit it consistently. One-time visitors rarely reach it.`
-    : 'No clear activation page detected yet.'
+    ? `Users who reach ${patterns.activationPage} appear more likely to return — returning users visit it consistently while one-time visitors rarely do. This is correlational, not confirmed causation.`
+    : 'No clear activation page pattern detected yet.'
 
   const depthContext: string = patterns.avgDepthReturners > 0
-    ? `Returning users explore ${patterns.avgDepthReturners} pages per session on average. One-time visitors see ${patterns.avgDepthBouncers}.`
+    ? `Returning users explore ${patterns.avgDepthReturners} pages per session on average versus ${patterns.avgDepthBouncers} for one-time visitors.`
     : ''
 
   const firstPageContext: string = patterns.returnerFirstPages.length > 0
-    ? `Returning users most commonly start their sessions on: ${patterns.returnerFirstPages.map((p: { url: string; count: number }) => `${p.url} (${p.count} sessions)`).join(', ')}.`
+    ? `Returning users most commonly start on: ${patterns.returnerFirstPages.map((p: { url: string; count: number }) => `${p.url} (${p.count} sessions)`).join(', ')}.`
     : ''
 
-  return `You are a sharp product analyst writing a daily digest for an early-stage founder. Be direct, specific, and lead with the most important finding first.
+  const dataVolume: string = current.totalVisitors < 20
+    ? 'low (under 20 visitors — treat as directional only)'
+    : current.totalVisitors < 50
+      ? 'moderate (20-50 visitors — patterns are emerging but not yet statistically reliable)'
+      : 'sufficient (50+ visitors — patterns are meaningful)'
 
-  CURRENT WEEK METRICS:
-  - Comeback rate: ${current.comebackRate !== null ? `${current.comebackRate}%` : 'insufficient data'}
-  - Trend: ${trendContext}
-  - 4-week history: ${trendLine}
-  - Total visitors: ${current.totalVisitors}
-  - Top page: ${current.topPages[0]?.url ?? 'none'}
+  return `You are a careful product analyst writing a weekly digest for an early-stage founder. Your job is to surface what the data actually shows — not what you think might be true.
 
-  BEHAVIORAL PATTERNS (last 30 days):
-  - ${activationContext}
-  - ${depthContext}
-  - ${firstPageContext}
+DATA VOLUME: ${dataVolume}
 
-  Write 2-3 sentences of plain English insight. Rules:
-  - Lead with the most important signal — trend direction or activation pattern
-  - Use actual numbers and page names from the data
-  - If the trend is improving, say so clearly and tell them what to double down on
-  - If the trend is declining, say so clearly and tell them what to investigate
-  - Do not use bullet points, markdown, or headers
-  - Do not start with "Based on" or "Looking at" or "Your data shows"
-  - Do not be generic — every sentence should be specific to this product's data
-  - If data is too thin to say anything meaningful, say so honestly in one sentence`
+CURRENT WEEK:
+- Comeback rate: ${current.comebackRate !== null ? `${current.comebackRate}%` : 'insufficient data'}
+- Trend: ${trendContext}
+- 4-week history: ${trendLine}
+- Total visitors: ${current.totalVisitors}
+
+BEHAVIORAL PATTERNS (last 30 days):
+- ${activationContext}
+- ${depthContext}
+- ${firstPageContext}
+
+Write exactly 3 sentences. Rules:
+- Sentence 1: State the comeback rate and trend direction factually. Use measured language — "fell", "rose", "held steady" not "crashed" or "surged".
+- Sentence 2: State the most interesting behavioral pattern from the data. Use hedged language — "appears to", "suggests", "users who reach X tend to" not "X is the reason" or "X causes".
+- Sentence 3: Give one specific, actionable thing to investigate or double down on this week based on the data.
+- Never use the words "strongly", "clearly", "obviously", "definitely", "critical", or "proof".
+- Never claim causation. Correlation only.
+- If data volume is low, open sentence 1 with a note that patterns are directional given the sample size.
+- Do not use bullet points, markdown, or headers.
+- Do not start with "Based on", "Looking at", or "Your data shows".`
 }
 
 export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
