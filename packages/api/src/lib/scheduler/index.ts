@@ -3,6 +3,7 @@ import { prisma } from '@/db/client'
 import { buildDigest } from '@/lib/digest/index'
 import { sendDigest } from '@/lib/email/index'
 import type { DigestData } from '@/types/index'
+import { captureWeeklySnapshot } from '../analytics/snapshots'
 
 async function runDailyDigest(): Promise<void> {
   console.log('[Pulsar] Running daily digest...')
@@ -16,10 +17,12 @@ async function runDailyDigest(): Promise<void> {
     return
   }
 
-  console.log(`[Pulsar] Sending digest to ${projects.length} project(s)`)
+  console.log(`[Pulsar] Processing ${projects.length} project(s)`)
 
   const results = await Promise.allSettled(
     projects.map(async (project) => {
+      // capture snapshot first, separately from digest generation
+      await captureWeeklySnapshot(project.projectKey)
       const digest: DigestData = await buildDigest(project.projectKey)
       await sendDigest(project.email, digest)
       console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)

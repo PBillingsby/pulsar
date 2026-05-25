@@ -15,7 +15,6 @@ function getPathFromUrl(url: string): string {
 }
 
 export async function buildDigest(projectKey: string): Promise<DigestData> {
-  await captureWeeklySnapshot(projectKey)
 
   const [current, snapshots, patterns]: [PulsarStats, WeeklySnapshot[], BehavioralPatterns] = await Promise.all([
     getStats(projectKey),

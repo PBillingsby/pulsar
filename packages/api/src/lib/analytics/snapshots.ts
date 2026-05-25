@@ -54,7 +54,9 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
   }).length
 
   const comebackRate: number | null = totalVisitors >= 10
-    ? Math.round((returning / totalVisitors) * 100)
+    ? returning > 0
+      ? Math.round((returning / totalVisitors) * 100)
+      : null
     : null
 
   await prisma.weeklySnapshot.upsert({
