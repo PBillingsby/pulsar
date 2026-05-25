@@ -123,6 +123,10 @@ function renderEmail(digest: DigestData): string {
   const topPageDisplay: string = digest.topPage || 'homepage'
   const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate)
 
+  function highlightPaths(text: string): string {
+    return text.replace(/(\/[a-z0-9\-\/]+)/g, '<code style="background:#F4F4F0;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:#111;">$1</code>')
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -192,7 +196,7 @@ function renderEmail(digest: DigestData): string {
           <tr>
             <td style="background:#1a1a1a;border-radius:14px;padding:28px 32px;">
               <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">Pulsar Insight</p>
-              <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.8;font-weight:300;">${digest.insight}</p>
+              <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.8;font-weight:300;">${highlightPaths(digest.insight)}</p>
             </td>
           </tr>
         </table>

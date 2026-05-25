@@ -5,6 +5,14 @@ const client: Anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
+function toPath(url: string): string {
+  try {
+    return new URL(url).pathname
+  } catch {
+    return url
+  }
+}
+
 function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
   const validSnapshots: WeeklySnapshot[] = snapshots
     .filter((s: WeeklySnapshot) => s.comebackRate !== null)
@@ -18,10 +26,10 @@ function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
     const parts: string[] = [
       `Week of ${week}:`,
       `comeback ${s.comebackRate}%`,
-      s.activationPage ? `activation page ${s.activationPage}` : 'no activation page',
+      s.activationPage ? `activation page ${toPath(s.activationPage)}` : 'no activation page',
       s.activationReachRate !== null ? `activation reach ${s.activationReachRate}%` : '',
       s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
-      s.returnerFirstPage ? `returners start on ${s.returnerFirstPage}` : '',
+      s.returnerFirstPage ? `returners start on ${toPath(s.returnerFirstPage)}` : '',
     ].filter(Boolean)
     return parts.join(', ')
   })
@@ -37,28 +45,25 @@ function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
   const previous: WeeklySnapshot = valid[1]
   const changes: string[] = []
 
-  // activation page change
   if (current.activationPage !== previous.activationPage) {
     if (current.activationPage && previous.activationPage) {
-      changes.push(`Activation page shifted from ${previous.activationPage} to ${current.activationPage}`)
+      changes.push(`Activation page shifted from ${toPath(previous.activationPage)} to ${toPath(current.activationPage)}`)
     } else if (current.activationPage && !previous.activationPage) {
-      changes.push(`A new activation page emerged this week: ${current.activationPage}`)
+      changes.push(`A new activation page emerged this week: ${toPath(current.activationPage)}`)
     } else if (!current.activationPage && previous.activationPage) {
-      changes.push(`The activation page signal (${previous.activationPage}) disappeared this week`)
+      changes.push(`The activation page signal (${toPath(previous.activationPage)}) disappeared this week`)
     }
   }
 
-  // funnel completion rate change
   if (current.activationReachRate !== null && previous.activationReachRate !== null) {
     const funnelDelta: number = current.activationReachRate - previous.activationReachRate
     if (Math.abs(funnelDelta) >= 5) {
       changes.push(
-        `Activation completion rate (% of sessions reaching ${current.activationPage ?? 'activation page'}) ${funnelDelta > 0 ? 'rose' : 'fell'} from ${previous.activationReachRate}% to ${current.activationReachRate}%`
+        `Activation completion rate for ${toPath(current.activationPage ?? '')} ${funnelDelta > 0 ? 'rose' : 'fell'} from ${previous.activationReachRate}% to ${current.activationReachRate}%`
       )
     }
   }
 
-  // session depth change for returners
   if (current.avgDepthReturners !== null && previous.avgDepthReturners !== null) {
     const depthDelta: number = current.avgDepthReturners - previous.avgDepthReturners
     if (Math.abs(depthDelta) >= 1) {
@@ -66,10 +71,9 @@ function detectPatternChanges(snapshots: WeeklySnapshot[]): string {
     }
   }
 
-  // returner entry point change
   if (current.returnerFirstPage !== previous.returnerFirstPage) {
     if (current.returnerFirstPage && previous.returnerFirstPage) {
-      changes.push(`Returning users now most commonly start on ${current.returnerFirstPage} instead of ${previous.returnerFirstPage}`)
+      changes.push(`Returning users now most commonly start on ${toPath(current.returnerFirstPage)} instead of ${toPath(previous.returnerFirstPage)}`)
     }
   }
 
@@ -89,7 +93,7 @@ function buildFunnelContext(snapshots: WeeklySnapshot[]): string {
   }
 
   const delta: number = current.activationReachRate - previous.activationReachRate
-  return `${current.activationReachRate}% of sessions reached ${current.activationPage ?? 'activation page'} this week vs ${previous.activationReachRate}% last week (${delta > 0 ? '+' : ''}${delta} points)`
+  return `${current.activationReachRate}% of sessions reached ${toPath(current.activationPage ?? '')} this week vs ${previous.activationReachRate}% last week (${delta > 0 ? '+' : ''}${delta} points)`
 }
 
 function buildPrompt(ctx: DigestContext): string {
@@ -137,13 +141,14 @@ FUNNEL COMPLETION:
 ${funnelContext}
 
 Write exactly 3 sentences. Rules:
-- Sentence 1: State the comeback rate change factually. If funnel completion data exists and also dropped, state both as likely related. If funnel data is missing, say so explicitly and name the activation page as the unknown variable.
-- Sentence 2: State the most diagnostic signal available. Prioritise in this order: (1) funnel completion change, (2) returner depth change, (3) activation page pattern. Use precise metric language — "returning cohort size", "activation-to-return conversion", "session depth among returners". Avoid vague phrases like "who is choosing to return".
-- Sentence 3: State one primary hypothesis and one concrete investigation step. The hypothesis must reference the activation page by name if one exists. Do not offer multiple soft hypotheses — pick the most likely one based on available data.
+- Sentence 1: State the comeback rate change factually. If funnel completion data exists and also dropped, state both as likely related. If funnel data is missing, say so explicitly and name the activation page path as the unknown variable.
+- Sentence 2: State the most diagnostic signal available. Prioritise in this order: (1) funnel completion change, (2) returner depth change, (3) activation page pattern. Use precise metric language — "returning cohort size", "activation-to-return conversion", "session depth among returners". Avoid vague phrases.
+- Sentence 3: State one primary hypothesis and one concrete investigation step. The hypothesis must reference the activation page path. Do not offer multiple soft hypotheses — pick the most likely one based on available data.
 - Structure your reasoning as: retention change → activation rate status → engagement quality among returners → primary hypothesis.
 - Never claim causation. Use "suggests", "appears", "may indicate".
 - Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
-- page depth does not equal activation quality — acknowledge this if using depth as a signal.
+- Page depth does not equal activation quality — acknowledge this if using depth as a signal.
+- Always refer to pages by their path only, never full URLs.
 - If data volume is low, note it in sentence 1.
 - Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
@@ -169,18 +174,18 @@ function generateRuleBasedInsight(ctx: DigestContext): string {
         : `Your comeback rate held steady at ${current.comebackRate}% this week.`
 
   const activationPart: string = snapshots[0]?.activationPage
-    ? `Users who reach ${snapshots[0].activationPage} appear more likely to return than those who do not.`
+    ? `Users who reach ${toPath(snapshots[0].activationPage)} appear more likely to return than those who do not.`
     : current.topPages[0]?.url
-      ? `Most activity this week is concentrated on ${current.topPages[0].url}.`
+      ? `Most activity this week is concentrated on ${toPath(current.topPages[0].url)}.`
       : 'No clear activation pattern detected yet.'
 
   const actionPart: string = comebackDelta !== null && comebackDelta < -10
-    ? `Investigate what changed this week in your onboarding or activation flow.`
+    ? 'Investigate what changed this week in your onboarding or activation flow.'
     : comebackDelta !== null && comebackDelta > 5
-      ? `Keep doing what you're doing — double down on whatever drove this week's improvement.`
-      : `Keep driving traffic and watch whether the pattern holds next week.`
+      ? 'Keep doing what you\'re doing — double down on whatever drove this week\'s improvement.'
+      : 'Keep driving traffic and watch whether the pattern holds next week.'
 
-  return `${trendPart} ${activationPart} ${actionPart} `
+  return `${trendPart} ${activationPart} ${actionPart}`
 }
 
 export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
