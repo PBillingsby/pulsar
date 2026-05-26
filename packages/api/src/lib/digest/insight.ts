@@ -30,7 +30,9 @@ function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
       s.activationReachRate !== null ? `activation reach ${s.activationReachRate}%` : '',
       s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
       s.returnerFirstPage ? `returners start on ${toPath(s.returnerFirstPage)}` : '',
-      s.avgSessionDurationReturners ? `avg session ${s.avgSessionDurationReturners}s` : '',
+      (s as WeeklySnapshot & { avgSessionDurationReturners: number | null }).avgSessionDurationReturners
+        ? `avg session ${(s as WeeklySnapshot & { avgSessionDurationReturners: number | null }).avgSessionDurationReturners}s`
+        : '',
     ].filter(Boolean)
     return parts.join(', ')
   })
@@ -119,11 +121,6 @@ function buildBehavioralContext(ctx: DigestContext): string {
     lines.push(`${topCopy.count} sessions copied content from ${toPath(topCopy.url)} — users are researching but may not be converting.`)
   }
 
-  if (patterns.highIntentPages.length > 0) {
-    const topCopy = patterns.highIntentPages[0]
-    lines.push(`Users are copying content from ${toPath(topCopy.url)} — signals high research intent.`)
-  }
-
   if (patterns.activationPageScrollDepth !== null) {
     lines.push(`Average scroll depth on activation page: ${patterns.activationPageScrollDepth}%.`)
   }
@@ -179,18 +176,17 @@ BEHAVIORAL SIGNALS:
 ${behavioralContext}
 
 Write exactly 3 sentences. Rules:
-- Sentence 1: State the comeback rate change factually. If funnel completion data exists and also dropped, state both as likely related. If funnel data is missing, say so explicitly and name the activation page path as the unknown variable.
-- Sentence 2: State the most diagnostic signal available. Prioritise in this order: (1) funnel completion change, (2) returner depth change, (3) activation page pattern. Use precise metric language — "returning cohort size", "activation-to-return conversion", "session depth among returners". Avoid vague phrases.
-- Sentence 3: State one primary hypothesis and one concrete investigation step. The hypothesis must reference the activation page path. Do not offer multiple soft hypotheses — pick the most likely one based on available data.
-- Structure your reasoning as: retention change → activation rate status → engagement quality among returners → primary hypothesis.
+- Sentence 1: State the comeback rate change and the single most likely cause. If rage clicks exist on the activation page combine them into one sentence — they are directly related.
+- Sentence 2: Surface ONE secondary signal only. Pick the most actionable: funnel completion change, form submission rate, or high intent pages. Do not mention more than one.
+- Sentence 3: Give ONE concrete action. Not two. The most important investigation step only. If rage clicks exist on the activation page that takes priority over billing signals.
+- Priority order for signals: (1) funnel completion drop, (2) rage clicks on activation page, (3) form submission rate, (4) session duration, (5) high intent pages. Only surface the top two.
+- Never mention more than two signals total across all three sentences.
+- Structure: anomaly → most likely cause → one action.
 - Never claim causation. Use "suggests", "appears", "may indicate".
 - Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
-- Page depth does not equal activation quality — acknowledge this if using depth as a signal.
-- Always refer to pages by their path only, never full URLs.
+- Always refer to pages by path only, never full URLs.
 - If data volume is low, note it in sentence 1.
-- If rage clicks are detected on the activation page, treat this as a high-priority friction signal and mention it in sentence 2.
-- If high intent pages (copy events) exist, mention them in sentence 3 as a conversion opportunity.
-- If form submission rate is available, use it to quantify activation intent — a low rate alongside rage clicks strengthens the friction hypothesis.- Do not use bullet points, markdown, or headers.
+- Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }
 
