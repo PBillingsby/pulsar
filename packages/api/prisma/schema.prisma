@@ -35,16 +35,21 @@ model Session {
 }
 
 model Project {
-  id         String   @id @default(cuid())
-  projectKey String   @unique
-  name       String
-  email      String
-  beta       Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(cuid())
+  projectKey  String   @unique
+  name        String
+  email       String
+  domain      String?  @unique
+  beta        Boolean  @default(true)
+  language    String   @default("English")
+  digestDay   Int      @default(1)   // 0=Sunday, 1=Monday
+  digestHour  Int      @default(8)   // UTC hour
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([projectKey])
   @@index([email])
+  @@index([digestDay, digestHour])
 }
 
 model WeeklySnapshot {
