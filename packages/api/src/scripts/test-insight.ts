@@ -15,8 +15,7 @@ const [current, snapshots, patterns]: [PulsarStats, WeeklySnapshot[], Behavioral
 ])
 
 console.log('Current comeback rate:', current.comebackRate)
-console.log('Snapshots:', snapshots.map(s => ({ week: s.weekStart, rate: s.comebackRate })))
-console.log('Insufficient data:', current.insufficientData)
+console.log('Patterns:', JSON.stringify(patterns, null, 2))
 
 const ctx: DigestContext = { current, snapshots, patterns }
 const insight: string = await generateLLMInsight(ctx)
