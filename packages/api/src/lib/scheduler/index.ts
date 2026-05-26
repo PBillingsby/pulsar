@@ -71,14 +71,13 @@ async function processProject(project: {
   }
 }
 
-async function runScheduledDigests(): Promise<void> {
+async function runScheduledDigests(force: boolean = false): Promise<void> {
   const now: Date = new Date()
   const currentHour: number = now.getUTCHours()
   const currentMinute: number = now.getUTCMinutes()
   const currentDay: number = now.getUTCDay()
 
-  // only run on the hour
-  if (currentMinute !== 0) return
+  if (!force && currentMinute !== 0) return
 
   const projects = await prisma.project.findMany({
     where: {
