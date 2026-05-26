@@ -111,7 +111,12 @@ function buildBehavioralContext(ctx: DigestContext): string {
   }
 
   if (patterns.formSubmissionRate !== null) {
-    lines.push(`${patterns.formSubmissionRate}% of sessions resulted in a form submission.`)
+    lines.push(`${patterns.formSubmissionRate}% of sessions submitted a form — this is the clearest proxy for activation intent available.`)
+  }
+
+  if (patterns.highIntentPages.length > 0) {
+    const topCopy = patterns.highIntentPages[0]
+    lines.push(`${topCopy.count} sessions copied content from ${toPath(topCopy.url)} — users are researching but may not be converting.`)
   }
 
   if (patterns.highIntentPages.length > 0) {
@@ -183,8 +188,9 @@ Write exactly 3 sentences. Rules:
 - Page depth does not equal activation quality — acknowledge this if using depth as a signal.
 - Always refer to pages by their path only, never full URLs.
 - If data volume is low, note it in sentence 1.
-- If rage clicks are detected on the activation page, treat this as a high-priority friction signal and mention it specifically in sentence 2 or 3.
-- Do not use bullet points, markdown, or headers.
+- If rage clicks are detected on the activation page, treat this as a high-priority friction signal and mention it in sentence 2.
+- If high intent pages (copy events) exist, mention them in sentence 3 as a conversion opportunity.
+- If form submission rate is available, use it to quantify activation intent — a low rate alongside rage clicks strengthens the friction hypothesis.- Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }
 
