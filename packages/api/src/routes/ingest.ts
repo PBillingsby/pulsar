@@ -28,6 +28,31 @@ ingestRouter.post('/', async (c) => {
     })
   }
 
+  // origin validation — check if request comes from registered domain
+  const origin: string = c.req.header('origin') ?? c.req.header('referer') ?? ''
+
+  if (origin) {
+    const project = await prisma.project.findUnique({
+      where: { projectKey: body.events[0]?.projectKey },
+      select: { domain: true },
+    })
+
+    if (project?.domain) {
+      const normalisedOrigin: string = origin
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .split('/')[0]
+
+      if (!normalisedOrigin.includes(project.domain)) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Origin not permitted for this project key',
+        }, 403)
+      }
+    }
+  }
+
   await prisma.event.createMany({
     data: passed.map((e) => ({
       type: e.type,
