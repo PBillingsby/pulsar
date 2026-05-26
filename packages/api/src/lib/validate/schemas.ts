@@ -1,13 +1,23 @@
 import { z } from 'zod'
 
 export const eventSchema = z.object({
-  type: z.enum(['page_view', 'click']),
+  type: z.enum([
+    'page_view',
+    'click',
+    'rage_click',
+    'scroll_depth',
+    'session_end',
+    'form_submit',
+    'copy',
+    'tab_focus',
+    'tab_blur',
+  ]),
   sessionId: z.string().min(1),
   projectKey: z.string().min(1),
-  url: z.url(),
+  url: z.string().url(),
   referrer: z.string().optional(),
-  timestamp: z.iso.datetime(),
-  sessionStart: z.iso.datetime().optional(),
+  timestamp: z.string().datetime(),
+  sessionStart: z.string().datetime().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
