@@ -1,18 +1,21 @@
 import type { PulsarEvent } from '@/types/index'
-import { EventQueue } from '@/lib/queue'
+import { EventQueue } from '@/lib/queue/index'
 
 export function listenForRouteChanges(
   sessionId: string,
   projectKey: string,
   queue: EventQueue,
-  debug: boolean
+  debug: boolean,
+  onNavigate?: () => void
 ): void {
   let currentUrl: string = window.location.href
 
-  const track = () => {
+  const track = (): void => {
     const newUrl: string = window.location.href
     if (newUrl === currentUrl) return
     currentUrl = newUrl
+
+    onNavigate?.()
 
     const event: PulsarEvent = {
       type: 'page_view',
@@ -20,32 +23,19 @@ export function listenForRouteChanges(
       projectKey,
       url: newUrl,
       timestamp: new Date().toISOString(),
-      metadata: {
-        navigation: 'spa',
-      },
+      sessionStart: undefined,
+      metadata: { navigation: 'spa' },
     }
 
-    if (debug) {
-      console.log('[Pulsar] route change', newUrl)
-    }
-
+    if (debug) console.log('[Pulsar] route change', newUrl)
     queue.enqueue(event)
   }
 
-  // history API navigation
   const originalPushState = history.pushState.bind(history)
   const originalReplaceState = history.replaceState.bind(history)
 
-  history.pushState = (...args) => {
-    originalPushState(...args)
-    track()
-  }
+  history.pushState = (...args) => { originalPushState(...args); track() }
+  history.replaceState = (...args) => { originalReplaceState(...args); track() }
 
-  history.replaceState = (...args) => {
-    originalReplaceState(...args)
-    track()
-  }
-
-  // browser back/forward
   window.addEventListener('popstate', track)
 }
