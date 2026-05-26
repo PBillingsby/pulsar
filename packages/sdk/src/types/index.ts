@@ -1,12 +1,23 @@
 export interface PulsarConfig {
   projectKey: string
-  debug?: boolean
   endpoint?: string
+  debug?: boolean
   ignoreMe?: boolean
 }
 
+export type PulsarEventType =
+  | 'page_view'
+  | 'click'
+  | 'rage_click'
+  | 'scroll_depth'
+  | 'session_end'
+  | 'form_submit'
+  | 'copy'
+  | 'tab_focus'
+  | 'tab_blur'
+
 export interface PulsarEvent {
-  type: 'page_view' | 'click' | 'session_end'
+  type: PulsarEventType
   sessionId: string
   projectKey: string
   url: string
