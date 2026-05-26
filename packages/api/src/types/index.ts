@@ -1,5 +1,5 @@
 export interface IncomingEvent {
-  type: 'page_view' | 'click' | 'session_end'
+  type: 'page_view' | 'click'
   sessionId: string
   projectKey: string
   url: string
