@@ -1,15 +1,20 @@
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import { ingestRouter } from '@/routes/ingest'
 import { statsRouter } from '@/routes/stats'
 import { digestRouter } from '@/routes/digest'
 import { projectsRouter } from '@/routes/projects'
 import { startScheduler } from '@/lib/scheduler/index'
+import { ingestLimiter, registerLimiter } from '@/lib/middleware/rate-limit'
 
 const app = new Hono()
 
 app.use('*', cors())
+app.use('*', secureHeaders())
+app.use('/events/*', ingestLimiter)
+app.use('/projects/register', registerLimiter)
 
 app.get('/health', (c) => c.json({ status: 'ok' }))
 app.route('/events', ingestRouter)
@@ -17,7 +22,7 @@ app.route('/stats', statsRouter)
 app.route('/digest', digestRouter)
 app.route('/projects', projectsRouter)
 
-const PORT = Number(process.env.PORT) || 3001
+const PORT: number = Number(process.env.PORT) || 3001
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`Pulsar API running on http://localhost:${PORT}`)
