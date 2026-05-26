@@ -66,13 +66,21 @@ export interface DigestData {
 export interface RegisterProjectInput {
   name: string
   email: string
+  domain?: string
+  language?: string
+  digestDay?: number
+  digestHour?: number
 }
 
 export interface ProjectResponse {
   projectKey: string
   name: string
   email: string
+  domain: string | null
   beta: boolean
+  language: string
+  digestDay: number
+  digestHour: number
   createdAt: Date
 }
 
