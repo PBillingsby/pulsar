@@ -6,7 +6,7 @@ import { captureWeeklySnapshot, cleanupOldSnapshots } from '@/lib/analytics/snap
 import type { DigestData } from '@/types/index'
 
 const MAX_ATTEMPTS: number = 3
-const RETRY_DELAYS_MS: number[] = [5000, 15000, 45000] // 5s, 15s, 45s
+const RETRY_DELAYS_MS: number[] = [5000, 15000, 45000]
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -22,7 +22,6 @@ async function sendWithRetry(
   for (let attempt: number = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       await sendDigest(email, digest)
-      // success — if there was a previous failure record, mark it resolved
       await prisma.digestFailure.updateMany({
         where: { projectKey, resolved: false },
         data: { resolved: true },
@@ -31,82 +30,85 @@ async function sendWithRetry(
     } catch (err: unknown) {
       lastError = err
       console.warn(`[Pulsar] Digest send attempt ${attempt + 1} failed for ${projectKey}:`, err)
-
       if (attempt < MAX_ATTEMPTS - 1) {
-        const delay: number = RETRY_DELAYS_MS[attempt]
-        console.log(`[Pulsar] Retrying in ${delay / 1000}s...`)
-        await sleep(delay)
+        await sleep(RETRY_DELAYS_MS[attempt])
       }
     }
   }
 
-  // all attempts failed — record the failure
   const reason: string = lastError instanceof Error ? lastError.message : String(lastError)
-  console.error(`[Pulsar] All ${MAX_ATTEMPTS} attempts failed for ${projectKey}. Recording failure.`)
+  console.error(`[Pulsar] All ${MAX_ATTEMPTS} attempts failed for ${projectKey}.`)
 
   await prisma.digestFailure.create({
-    data: {
-      projectKey,
-      email,
-      reason,
-      attempts: MAX_ATTEMPTS,
-      resolved: false,
-    },
+    data: { projectKey, email, reason, attempts: MAX_ATTEMPTS, resolved: false },
   })
 }
 
-async function runDailyDigest(): Promise<void> {
-  console.log('[Pulsar] Running daily digest...')
+async function processProject(project: {
+  projectKey: string
+  email: string
+  language: string
+}): Promise<void> {
+  try {
+    await captureWeeklySnapshot(project.projectKey)
+    const digest: DigestData = await buildDigest(project.projectKey)
+    await sendWithRetry(project.projectKey, project.email, digest)
+    await cleanupOldSnapshots(project.projectKey)
+    console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)
+  } catch (err: unknown) {
+    const reason: string = err instanceof Error ? err.message : String(err)
+    console.error(`[Pulsar] Failed to process ${project.projectKey}:`, reason)
+
+    await prisma.digestFailure.create({
+      data: {
+        projectKey: project.projectKey,
+        email: project.email,
+        reason,
+        attempts: 1,
+        resolved: false,
+      },
+    })
+  }
+}
+
+async function runScheduledDigests(): Promise<void> {
+  const now: Date = new Date()
+  const currentHour: number = now.getUTCHours()
+  const currentMinute: number = now.getUTCMinutes()
+  const currentDay: number = now.getUTCDay()
+
+  // only run on the hour
+  if (currentMinute !== 0) return
 
   const projects = await prisma.project.findMany({
-    where: { beta: true },
+    where: {
+      beta: true,
+      digestHour: currentHour,
+      digestDay: currentDay,
+    },
+    select: {
+      projectKey: true,
+      email: true,
+      language: true,
+    },
   })
 
-  if (projects.length === 0) {
-    console.log('[Pulsar] No projects found.')
-    return
-  }
+  if (projects.length === 0) return
 
-  console.log(`[Pulsar] Processing ${projects.length} project(s)`)
+  console.log(`[Pulsar] ${projects.length} digest(s) due at ${currentHour}:00 UTC`)
 
-  const results = await Promise.allSettled(
-    projects.map(async (project) => {
-      try {
-        await captureWeeklySnapshot(project.projectKey)
-        const digest: DigestData = await buildDigest(project.projectKey)
-        await sendWithRetry(project.projectKey, project.email, digest)
-        await cleanupOldSnapshots(project.projectKey)
-        console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)
-      } catch (err: unknown) {
-        const reason: string = err instanceof Error ? err.message : String(err)
-        console.error(`[Pulsar] Failed to process ${project.projectKey}:`, reason)
+  // process concurrently — each fires independently, no batch delay needed
+  await Promise.allSettled(projects.map(processProject))
 
-        await prisma.digestFailure.create({
-          data: {
-            projectKey: project.projectKey,
-            email: project.email,
-            reason,
-            attempts: 1,
-            resolved: false,
-          },
-        })
-      }
-    })
-  )
-
-  const failed: number = results.filter((r) => r.status === 'rejected').length
-  if (failed > 0) {
-    console.error(`[Pulsar] ${failed} project(s) failed completely.`)
-  }
-
-  console.log('[Pulsar] Daily digest complete.')
+  console.log(`[Pulsar] Done processing ${projects.length} digest(s)`)
 }
 
 export function startScheduler(): void {
-  cron.schedule('0 8 * * *', () => {
-    runDailyDigest().catch(console.error)
+  // runs every minute, checks who is due
+  cron.schedule('* * * * *', () => {
+    runScheduledDigests().catch(console.error)
   })
-  console.log('[Pulsar] Scheduler started — digest runs daily at 8am UTC')
+  console.log('[Pulsar] Scheduler started — checking for due digests every minute')
 }
 
-export { runDailyDigest }
+export { runScheduledDigests as runDailyDigest }
