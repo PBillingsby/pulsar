@@ -113,7 +113,7 @@ function buildBehavioralContext(ctx: DigestContext): string {
   }
 
   if (patterns.formSubmissionRate !== null) {
-    lines.push(`${patterns.formSubmissionRate}% of sessions submitted a form — this is the clearest proxy for activation intent available.`)
+    lines.push(`Only ${patterns.formSubmissionRate}% of sessions submitted a form — if form submission is your activation event, this is your true activation rate, not your comeback rate.`)
   }
 
   if (patterns.highIntentPages.length > 0) {
@@ -181,7 +181,9 @@ Write exactly 3 sentences. Rules:
 - Sentence 3: Give ONE concrete action. Not two. The most important investigation step only. If rage clicks exist on the activation page that takes priority over billing signals.
 - Priority order for signals: (1) funnel completion drop, (2) rage clicks on activation page, (3) form submission rate, (4) session duration, (5) high intent pages. Only surface the top two.
 - Never mention more than two signals total across all three sentences.
-- Structure: anomaly → most likely cause → one action.
+- Structure: what changed → what the data suggests broke → what to do about it. Write like a trusted advisor delivering urgent news, not a system generating a report. Use human language.
+- Sentence 1 must create urgency without alarm. "Your comeback rate fell X points" is a log entry. "Something broke in your activation flow this week" with the data supporting it is a founder insight.
+- Lead with the implication, not the metric.
 - Never claim causation. Use "suggests", "appears", "may indicate".
 - Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
 - Always refer to pages by path only, never full URLs.
