@@ -4,6 +4,9 @@ import type { ProjectResponse } from '@/types/index'
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
 function renderWelcomeEmail(project: ProjectResponse): string {
+  const DAYS: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const digestDayName: string = DAYS[project.digestDay] ?? 'Monday'
+  const digestTimeFormatted: string = `${project.digestHour.toString().padStart(2, '0')}:00 UTC`
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,9 +133,9 @@ function renderWelcomeEmail(project: ProjectResponse): string {
               <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">What happens next</p>
               <table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <td style="padding-bottom:10px;">
-                    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;"><span style="color:#22C55E;font-weight:700;">Tomorrow at 8am</span> — your first Weekly Signal lands in this inbox. It'll show your comeback rate, top pages, and a plain-English insight about what your users are doing.</p>
-                  </td>
+                  <span style="color:#22C55E;font-weight:700;">
+                    ${digestDayName} at ${digestTimeFormatted}
+                  </span> — your first Weekly Signal lands in this inbox in ${project.language}.
                 </tr>
                 <tr>
                   <td>
