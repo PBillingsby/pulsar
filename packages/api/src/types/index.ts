@@ -117,6 +117,12 @@ export interface BehavioralPatterns {
   avgDepthReturners: number
   avgDepthBouncers: number
   returnerFirstPages: { url: string; count: number }[]
+  avgSessionDurationReturners: number | null
+  avgSessionDurationBouncers: number | null
+  rageClickPages: { url: string; count: number }[]
+  formSubmissionRate: number | null
+  highIntentPages: { url: string; count: number }[]
+  activationPageScrollDepth: number | null
 }
 
 export interface DigestContext {

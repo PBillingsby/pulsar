@@ -81,6 +81,10 @@ export async function captureWeeklySnapshot(projectKey: string): Promise<void> {
       returnerFirstPage: patterns.returnerFirstPages[0]?.url ?? null,
       activationReachRate,
       activationPageViews,
+      avgSessionDurationReturners: patterns.avgSessionDurationReturners,
+      avgSessionDurationBouncers: patterns.avgSessionDurationBouncers,
+      rageClickCount: patterns.rageClickPages.reduce((sum, p) => sum + p.count, 0),
+      formSubmissionRate: patterns.formSubmissionRate,
     },
     create: {
       projectKey,

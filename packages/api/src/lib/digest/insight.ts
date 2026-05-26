@@ -30,6 +30,7 @@ function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
       s.activationReachRate !== null ? `activation reach ${s.activationReachRate}%` : '',
       s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
       s.returnerFirstPage ? `returners start on ${toPath(s.returnerFirstPage)}` : '',
+      s.avgSessionDurationReturners ? `avg session ${s.avgSessionDurationReturners}s` : '',
     ].filter(Boolean)
     return parts.join(', ')
   })
@@ -96,6 +97,35 @@ function buildFunnelContext(snapshots: WeeklySnapshot[]): string {
   return `${current.activationReachRate}% of sessions reached ${toPath(current.activationPage ?? '')} this week vs ${previous.activationReachRate}% last week (${delta > 0 ? '+' : ''}${delta} points)`
 }
 
+function buildBehavioralContext(ctx: DigestContext): string {
+  const { patterns } = ctx
+  const lines: string[] = []
+
+  if (patterns.avgSessionDurationReturners !== null && patterns.avgSessionDurationBouncers !== null) {
+    lines.push(`Returning users average ${patterns.avgSessionDurationReturners}s per session vs ${patterns.avgSessionDurationBouncers}s for one-time visitors.`)
+  }
+
+  if (patterns.rageClickPages.length > 0) {
+    const topRage = patterns.rageClickPages[0]
+    lines.push(`Rage clicks detected on ${toPath(topRage.url)} (${topRage.count} occurrences) — suggests UI friction or broken interaction.`)
+  }
+
+  if (patterns.formSubmissionRate !== null) {
+    lines.push(`${patterns.formSubmissionRate}% of sessions resulted in a form submission.`)
+  }
+
+  if (patterns.highIntentPages.length > 0) {
+    const topCopy = patterns.highIntentPages[0]
+    lines.push(`Users are copying content from ${toPath(topCopy.url)} — signals high research intent.`)
+  }
+
+  if (patterns.activationPageScrollDepth !== null) {
+    lines.push(`Average scroll depth on activation page: ${patterns.activationPageScrollDepth}%.`)
+  }
+
+  return lines.length > 0 ? lines.join('\n') : 'No additional behavioral signals available yet.'
+}
+
 function buildPrompt(ctx: DigestContext): string {
   const { current, snapshots } = ctx
 
@@ -115,6 +145,7 @@ function buildPrompt(ctx: DigestContext): string {
   const patternHistory: string = buildPatternHistory(snapshots)
   const patternChanges: string = detectPatternChanges(snapshots)
   const funnelContext: string = buildFunnelContext(snapshots)
+  const behavioralContext: string = buildBehavioralContext(ctx)
 
   const dataVolume: string = current.totalVisitors < 20
     ? 'low (under 20 visitors — treat as directional only)'
@@ -139,6 +170,8 @@ ${patternChanges}
 
 FUNNEL COMPLETION:
 ${funnelContext}
+BEHAVIORAL SIGNALS:
+${behavioralContext}
 
 Write exactly 3 sentences. Rules:
 - Sentence 1: State the comeback rate change factually. If funnel completion data exists and also dropped, state both as likely related. If funnel data is missing, say so explicitly and name the activation page path as the unknown variable.
@@ -150,6 +183,7 @@ Write exactly 3 sentences. Rules:
 - Page depth does not equal activation quality — acknowledge this if using depth as a signal.
 - Always refer to pages by their path only, never full URLs.
 - If data volume is low, note it in sentence 1.
+- If rage clicks are detected on the activation page, treat this as a high-priority friction signal and mention it specifically in sentence 2 or 3.
 - Do not use bullet points, markdown, or headers.
 - Do not start with "Based on", "Looking at", or "Your data shows".`
 }
