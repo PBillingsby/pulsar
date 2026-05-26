@@ -1,51 +1,64 @@
-import type { PulsarConfig } from '@/types/index'
-import { getOrCreateSessionId } from '@/lib/session/index'
+import { getOrCreateSessionId, isIgnored } from '@/lib/session/index'
 import { EventQueue } from '@/lib/queue/index'
-import { listenForClicks } from '@/lib/events/clicks'
+import { sendEvents } from '@/lib/queue/sender'
 import { listenForRouteChanges } from '@/lib/events/routes'
+import { listenForClicks } from '@/lib/events/clicks'
+import { listenForScrollDepth } from '@/lib/events/scroll'
+import { listenForSessionEvents } from '@/lib/events/session'
+import { listenForRageClicks } from '@/lib/events/rage-click'
+import { listenForFormSubmits } from '@/lib/events/form'
+import { listenForCopy } from '@/lib/events/copy'
+import type { PulsarConfig, PulsarEvent } from '@/types/index'
 
-const DEFAULT_ENDPOINT = 'https://api.pulsar.dev/events'
+export function init(config: PulsarConfig): void {
+  const {
+    projectKey,
+    endpoint = 'https://api.pulsar.dev/events',
+    debug = false,
+    ignoreMe = false,
+  } = config
 
-export class Tracker {
-  private config: PulsarConfig
-  private sessionId: string
-  private queue: EventQueue
-
-  constructor(config: PulsarConfig) {
-    this.config = config
-    this.sessionId = getOrCreateSessionId()
-    this.queue = new EventQueue(
-      config.endpoint ?? DEFAULT_ENDPOINT,
-      config.debug ?? false
-    )
+  if (ignoreMe) {
+    localStorage.setItem('pulsar_ignore', 'true')
+    if (debug) console.log('[Pulsar] ignoreMe set — this device will be ignored')
+    return
   }
 
-  private trackPageView(): void {
-    this.queue.enqueue({
-      type: 'page_view',
-      sessionId: this.sessionId,
-      projectKey: this.config.projectKey,
-      url: window.location.href,
-      referrer: document.referrer || undefined,
-      timestamp: new Date().toISOString(),
-    })
+  if (isIgnored()) {
+    if (debug) console.log('[Pulsar] ignoreMe is active — tracking disabled')
+    return
   }
 
-  listen(): void {
-    this.trackPageView()
-    this.queue.start()
-    listenForClicks(
-      this.sessionId,
-      this.config.projectKey,
-      this.queue,
-      this.config.debug ?? false
-    )
-    listenForRouteChanges(
-      this.sessionId,
-      this.config.projectKey,
-      this.queue,
-      this.config.debug ?? false
-    )
-    window.addEventListener('beforeunload', () => this.queue.flush())
+  ; (window as Window & { __pulsarEndpoint?: string }).__pulsarEndpoint = endpoint
+
+  const sessionId: string = getOrCreateSessionId()
+  const sessionStart: string = new Date().toISOString()
+
+  const queue: EventQueue = new EventQueue(
+    endpoint,
+    debug,
+    (events: PulsarEvent[]) => sendEvents(endpoint, events, debug)
+  )
+
+  const initialPageView: PulsarEvent = {
+    type: 'page_view',
+    sessionId,
+    projectKey,
+    url: window.location.href,
+    referrer: document.referrer || undefined,
+    timestamp: new Date().toISOString(),
+    sessionStart,
   }
+  queue.enqueue(initialPageView)
+
+  const resetScroll: () => void = listenForScrollDepth(sessionId, projectKey, queue, debug)
+
+  listenForRouteChanges(sessionId, projectKey, queue, debug, resetScroll)
+  listenForClicks(sessionId, projectKey, queue, debug)
+  listenForSessionEvents(sessionId, projectKey, sessionStart, queue, debug)
+  listenForRageClicks(sessionId, projectKey, queue, debug)
+  listenForFormSubmits(sessionId, projectKey, queue, debug)
+  listenForCopy(sessionId, projectKey, queue, debug)
+
+  if (debug) console.log('[Pulsar] initialised', { projectKey, sessionId })
 }
