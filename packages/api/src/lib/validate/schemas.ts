@@ -14,10 +14,10 @@ export const eventSchema = z.object({
   ]),
   sessionId: z.string().min(1),
   projectKey: z.string().min(1),
-  url: z.string().url(),
+  url: z.url(),
   referrer: z.string().optional(),
-  timestamp: z.string().datetime(),
-  sessionStart: z.string().datetime().optional(),
+  timestamp: z.iso.datetime(),
+  sessionStart: z.iso.datetime().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
 })
 
