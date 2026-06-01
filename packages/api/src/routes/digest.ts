@@ -11,8 +11,13 @@ digestRouter.post('/:projectKey', zValidator('json', digestTriggerSchema), async
   const projectKey: string = c.req.param('projectKey')
   const { email }: DigestTriggerInput = c.req.valid('json')
 
+  const project = await prisma.project.findUnique({
+    where: { projectKey },
+    select: { language: true },
+  })
+
   const digest: DigestData = await buildDigest(projectKey)
-  await sendDigest(email, digest)
+  await sendDigest(email, digest, project?.language ?? 'English')
 
   return c.json<ApiResponse<DigestData>>({ success: true, data: digest })
 })
