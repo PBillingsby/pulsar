@@ -1,6 +1,6 @@
 import { prisma } from '@/db/client'
 
-const PROJECT_KEY: string = 'my-app-xgb9f8'
+const PROJECT_KEY: string = 'dropframe-qdkuz0'
 
 const PAGES: string[] = [
   'https://myapp.com/',
