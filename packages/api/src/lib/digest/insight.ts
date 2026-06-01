@@ -189,7 +189,9 @@ Write exactly 3 sentences. Rules:
 - Always refer to pages by path only, never full URLs.
 - If data volume is low, note it in sentence 1.
 - Do not use bullet points, markdown, or headers.
-- Do not start with "Based on", "Looking at", or "Your data shows".`
+- Do not start with "Based on", "Looking at", or "Your data shows".
+- Write the entire response in ${ctx.language}. Do not translate idioms literally — use natural phrasing a native ${ctx.language} speaker would use.
+`
 }
 
 function generateRuleBasedInsight(ctx: DigestContext): string {
