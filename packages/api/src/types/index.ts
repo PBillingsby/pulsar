@@ -129,4 +129,5 @@ export interface DigestContext {
   current: PulsarStats
   snapshots: WeeklySnapshot[]
   patterns: BehavioralPatterns
+  language: string
 }
