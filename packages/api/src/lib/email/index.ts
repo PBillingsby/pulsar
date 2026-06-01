@@ -1,9 +1,10 @@
 import { Resend } from 'resend'
 import type { DigestData, WeeklySnapshot } from '@/types/index'
+import { getEmailStrings } from './translations'
 
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
-function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | null): string {
+function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | null, weekTrendLabel: string): string {
   const recentSnapshots: WeeklySnapshot[] = snapshots.slice(1, 5).reverse()
 
   const allPoints: { label: string; rate: number | null }[] = [
@@ -19,7 +20,6 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
     .filter((r): r is number => r !== null)
 
   if (validRates.length < 2) return ''
-
 
   const maxRate: number = Math.max(...validRates)
   const maxBarHeight: number = 48
@@ -65,7 +65,7 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:#F9F7F2;border:1px solid #E8E4DC;border-radius:14px;padding:20px 24px;">
-              <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.12em;">4-Week Trend</p>
+              <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.12em;">${weekTrendLabel}</p>
               <table cellpadding="0" cellspacing="0" style="width:100%;">
                 <tr style="vertical-align:bottom;">
                   ${bars}
@@ -78,15 +78,15 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
     </tr>`
 }
 
-function renderEmail(digest: DigestData): string {
+function renderEmail(digest: DigestData, language: string): string {
+  const t = getEmailStrings(language)
+
   const comebackDisplay: string = digest.comebackRate !== null
     ? `${digest.comebackRate}%`
     : 'Not enough data yet'
 
   const trendValue: number | null = digest.comebackTrend
-    ? (digest.comebackTrend.startsWith('+')
-      ? parseInt(digest.comebackTrend)
-      : parseInt(digest.comebackTrend))
+    ? parseInt(digest.comebackTrend)
     : null
 
   const trendBg: string = trendValue === null ? '#F3F4F6'
@@ -120,8 +120,7 @@ function renderEmail(digest: DigestData): string {
      </td></tr>`
     : ''
 
-  const topPageDisplay: string = digest.topPage || 'homepage'
-  const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate)
+  const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate, t.weekTrend)
 
   function highlightPaths(text: string): string {
     return text.replace(/(\/[a-z0-9\-\/]+)/g, '<code style="background:#F4F4F0;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:#111;">$1</code>')
@@ -140,7 +139,7 @@ function renderEmail(digest: DigestData): string {
   <tr><td align="center">
   <table cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
 
-    <!-- ── HEADER ─────────────────────────────────── -->
+    <!-- HEADER -->
     <tr>
       <td style="background:#111111;border-radius:16px 16px 0 0;padding:28px 40px;">
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -156,21 +155,21 @@ function renderEmail(digest: DigestData): string {
       </td>
     </tr>
 
-    <!-- ── TODAY'S PULSE ──────────────────────────── -->
+    <!-- WEEKLY SIGNAL -->
     <tr>
       <td style="background:#ffffff;padding:32px 40px 24px;">
-        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">Weekly Signal</p>
+        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${t.weeklySignal}</p>
         <p style="margin:0;font-size:22px;font-weight:500;color:#111111;line-height:1.45;">${digest.summary}</p>
       </td>
     </tr>
 
-    <!-- ── COMEBACK RATE ──────────────────────────── -->
+    <!-- COMEBACK RATE -->
     <tr>
       <td style="background:#ffffff;padding:0 40px 28px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:${comebackBg};border:1px solid ${comebackBorder};border-radius:14px;padding:28px 32px;">
-              <p style="margin:0;font-size:10px;font-weight:700;color:${comebackLabelColor};text-transform:uppercase;letter-spacing:0.12em;">Comeback Rate</p>
+              <p style="margin:0;font-size:10px;font-weight:700;color:${comebackLabelColor};text-transform:uppercase;letter-spacing:0.12em;">${t.comebackRate}</p>
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:bottom;padding-right:12px;">
@@ -178,7 +177,7 @@ function renderEmail(digest: DigestData): string {
                     ${trendHtml}
                   </td>
                   <td style="vertical-align:bottom;padding-bottom:6px;">
-                    <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">${digest.returning} of ${digest.totalVisitors} visitors returned</p>
+                    <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">${digest.returning} ${t.ofVisitorsReturned}</p>
                   </td>
                 </tr>
               </table>
@@ -189,13 +188,13 @@ function renderEmail(digest: DigestData): string {
     </tr>
     ${trendChart}
 
-    <!-- ── INSIGHT ────────────────────────────────── -->
+    <!-- INSIGHT -->
     <tr>
       <td style="background:#ffffff;padding:0 40px 32px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:#1a1a1a;border-radius:14px;padding:28px 32px;">
-              <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">Pulsar Insight</p>
+              <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${t.insight}</p>
               <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.8;font-weight:300;">${highlightPaths(digest.insight)}</p>
             </td>
           </tr>
@@ -203,41 +202,38 @@ function renderEmail(digest: DigestData): string {
       </td>
     </tr>
 
-    <!-- ── STATS ROW ──────────────────────────────── -->
+    <!-- STATS ROW -->
     <tr>
       <td style="background:#ffffff;padding:0 40px 36px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <!-- Visitors -->
             <td width="33%" style="padding-right:6px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#F4F4F0;border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">Visitors</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">${t.visitors}</p>
                     <p style="margin:6px 0 0;font-size:32px;font-weight:800;color:#111111;letter-spacing:-1px;">${digest.totalVisitors}</p>
                   </td>
                 </tr>
               </table>
             </td>
-            <!-- Returned -->
             <td width="33%" style="padding:0 3px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.1em;">Returned</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.1em;">${t.returned}</p>
                     <p style="margin:6px 0 0;font-size:32px;font-weight:800;color:#111111;letter-spacing:-1px;">${digest.returning}</p>
                   </td>
                 </tr>
               </table>
             </td>
-            <!-- Top Page -->
             <td width="33%" style="padding-left:6px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:${digest.isActivationPage ? '#FFF7ED' : '#F4F4F0'};border:${digest.isActivationPage ? '1px solid #FED7AA' : 'none'};border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:${digest.isActivationPage ? '#C2410C' : '#999'};text-transform:uppercase;letter-spacing:0.1em;">${digest.isActivationPage ? 'Key Page' : 'Top Page'}</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:${digest.isActivationPage ? '#C2410C' : '#999'};text-transform:uppercase;letter-spacing:0.1em;">${digest.isActivationPage ? t.keyPage : t.topPage}</p>
                     <p style="margin:6px 0 0;font-size:18px;font-weight:800;color:#111111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${digest.keyPage || 'homepage'}</p>
-                    ${digest.isActivationPage ? `<p style="margin:4px 0 0;font-size:10px;color:#C2410C;">returners visit this</p>` : ''}
+                    ${digest.isActivationPage ? `<p style="margin:4px 0 0;font-size:10px;color:#C2410C;">${t.returnersVisit}</p>` : ''}
                   </td>
                 </tr>
               </table>
@@ -247,15 +243,15 @@ function renderEmail(digest: DigestData): string {
       </td>
     </tr>
 
-    <!-- ── FOOTER ─────────────────────────────────── -->
+    <!-- FOOTER -->
     <tr>
       <td style="background:#F9F7F2;border-top:1px solid #E8E4DC;border-radius:0 0 16px 16px;padding:20px 40px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td>
               <p style="margin:0;font-size:11px;color:#AAAAAA;line-height:1.6;">
-                You're receiving this because you installed Pulsar on <strong style="color:#888;">${digest.projectKey}</strong>.<br/>
-                <span style="color:#BBBBBB;">Pulsar — know if your product is working.</span>
+                ${t.receiving} <strong style="color:#888;">${digest.projectKey}</strong>.<br/>
+                <span style="color:#BBBBBB;">${t.footer}</span>
               </p>
             </td>
             <td align="right" style="vertical-align:middle;">
@@ -276,12 +272,14 @@ function renderEmail(digest: DigestData): string {
 
 export async function sendDigest(
   to: string,
-  digest: DigestData
+  digest: DigestData,
+  language: string = 'English'
 ): Promise<void> {
+  const t = getEmailStrings(language)
   await resend.emails.send({
     from: 'Pulsar <onboarding@resend.dev>',
     to,
-    subject: `Your Product Pulse — ${digest.date}`,
-    html: renderEmail(digest),
+    subject: `${t.subject} — ${digest.date}`,
+    html: renderEmail(digest, language),
   })
 }
