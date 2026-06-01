@@ -15,13 +15,14 @@ async function sleep(ms: number): Promise<void> {
 async function sendWithRetry(
   projectKey: string,
   email: string,
+  language: string,
   digest: DigestData
 ): Promise<void> {
   let lastError: unknown = null
 
   for (let attempt: number = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
-      await sendDigest(email, digest)
+      await sendDigest(email, digest, language)
       await prisma.digestFailure.updateMany({
         where: { projectKey, resolved: false },
         data: { resolved: true },
@@ -52,7 +53,7 @@ async function processProject(project: {
   try {
     await captureWeeklySnapshot(project.projectKey)
     const digest: DigestData = await buildDigest(project.projectKey)
-    await sendWithRetry(project.projectKey, project.email, digest)
+    await sendWithRetry(project.projectKey, project.email, project.language, digest)
     await cleanupOldSnapshots(project.projectKey)
     console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)
   } catch (err: unknown) {
