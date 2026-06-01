@@ -4,6 +4,7 @@ import { detectPatterns } from '@/lib/analytics/patterns'
 import { captureWeeklySnapshot, getRecentSnapshots } from '@/lib/analytics/snapshots'
 import { generateLLMInsight } from '@/lib/digest/insight'
 import type { DigestData, DigestContext, PulsarStats, WeeklySnapshot, BehavioralPatterns } from '@/types/index'
+import { LOCALE_MAP, getEmailStrings } from '../email/translations'
 
 function getPathFromUrl(url: string): string {
   try {
@@ -16,13 +17,16 @@ function getPathFromUrl(url: string): string {
 
 export async function buildDigest(projectKey: string): Promise<DigestData> {
 
-  const [current, snapshots, patterns]: [PulsarStats, WeeklySnapshot[], BehavioralPatterns] = await Promise.all([
+  const [current, snapshots, patterns, project] = await Promise.all([
     getStats(projectKey),
     getRecentSnapshots(projectKey),
     detectPatterns(projectKey),
+    prisma.project.findUnique({ where: { projectKey }, select: { language: true } }),
   ])
 
-  const ctx: DigestContext = { current, snapshots, patterns }
+  const language = project?.language ?? 'English'
+  const t = getEmailStrings(language)
+  const ctx: DigestContext = { current, snapshots, patterns, language }
   const insight: string = await generateLLMInsight(ctx)
 
   const returningCount: number = Math.round(
@@ -39,19 +43,20 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
 
   const lines: string[] = []
   if (current.totalVisitors === 0) {
-    lines.push('No visitors yet.')
+    lines.push(t.noVisitors)
   } else {
-    lines.push(`${current.totalVisitors} ${current.totalVisitors === 1 ? 'visitor' : 'visitors'} in the last 7 days.`)
+    const visitorWord = current.totalVisitors === 1 ? t.visitorSingular : t.visitorPlural
+    lines.push(`${current.totalVisitors} ${visitorWord} ${t.inTheLast7Days}`)
     if (returning > 0) {
-      lines.push(`${returning} came back.`)
+      lines.push(`${returning} ${t.cameBack}`)
     } else {
-      lines.push('No one has returned yet.')
+      lines.push(t.noOneReturned)
     }
     if (keyPagePath) {
-      const pageLabel: string = isActivationPage
-        ? `Users who reach ${keyPagePath} are significantly more likely to return.`
-        : `Most visited: ${keyPagePath}.`
-      lines.push(pageLabel)
+      lines.push(isActivationPage
+        ? t.activationPageLabel(keyPagePath)
+        : t.topPageLabel(keyPagePath)
+      )
     }
   }
 
@@ -62,14 +67,16 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
   let comebackTrend: string | null = null
   if (previousSnapshot?.comebackRate != null && current.comebackRate != null) {
     const diff: number = current.comebackRate - previousSnapshot.comebackRate
-    if (diff > 0) comebackTrend = `+${diff}pts vs last week`
-    else if (diff < 0) comebackTrend = `${diff}pts vs last week`
-    else comebackTrend = 'unchanged vs last week'
+    if (diff > 0) comebackTrend = t.trendUp(diff)
+    else if (diff < 0) comebackTrend = t.trendDown(diff)
+    else comebackTrend = t.trendUnchanged
   }
+
+  const locale = LOCALE_MAP[language] ?? 'en-US'
 
   return {
     projectKey,
-    date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+    date: new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }),
     summary: lines.join(' '),
     comebackRate: current.comebackRate,
     comebackTrend,
