@@ -4,6 +4,7 @@ import { prisma } from '@/db/client'
 import { filterEvents } from '@/lib/filter/index'
 import { ingestSchema, type IngestInput } from '@/lib/validate/schemas'
 import type { ApiResponse, IncomingEvent } from '@/types/index'
+import { Prisma } from '@prisma/client'
 
 export const ingestRouter = new Hono()
 
@@ -14,27 +15,37 @@ ingestRouter.post('/', zValidator('json', ingestSchema), async (c) => {
 
   const projectKey: string = body.events[0]?.projectKey ?? ''
 
-  // origin validation
+  const project = await prisma.project.findFirst({
+    where: {
+      projectKey,
+      deletedAt: null,
+    },
+    select: {
+      domain: true,
+    },
+  })
+
+  if (!project) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'Project not found or deleted',
+    }, 404)
+  }
+
   const origin: string = c.req.header('origin') ?? c.req.header('referer') ?? ''
-  if (origin && projectKey) {
-    const project = await prisma.project.findUnique({
-      where: { projectKey },
-      select: { domain: true },
-    })
 
-    if (project?.domain) {
-      const normalisedOrigin: string = origin
-        .toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/^www\./, '')
-        .split('/')[0]
+  if (origin && project.domain) {
+    const normalisedOrigin: string = origin
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0]
 
-      if (!normalisedOrigin.includes(project.domain)) {
-        return c.json<ApiResponse<null>>({
-          success: false,
-          error: 'Origin not permitted for this project key',
-        }, 403)
-      }
+    if (!normalisedOrigin.includes(project.domain)) {
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Origin not permitted for this project key',
+      }, 403)
     }
   }
 
@@ -53,14 +64,16 @@ ingestRouter.post('/', zValidator('json', ingestSchema), async (c) => {
 
   if (passed.length > 0) {
     await prisma.event.createMany({
-      data: passed.map((e: IncomingEvent) => ({
+      data: passed.map((e: IncomingEvent): Prisma.EventCreateManyInput => ({
         type: e.type,
         sessionId: e.sessionId,
         projectKey: e.projectKey,
         url: e.url,
         referrer: e.referrer ?? null,
         timestamp: new Date(e.timestamp),
-        metadata: e.metadata ?? null,
+        metadata: e.metadata === undefined
+          ? Prisma.JsonNull
+          : (e.metadata as Prisma.InputJsonValue),
       })),
     })
   }

@@ -30,15 +30,26 @@ export const registerProjectSchema = z.object({
   email: z.email(),
   domain: z.string().optional(),
   language: z.enum([
-    'English', 'Spanish', 'French', 'German',
-    'Portuguese', 'Turkish', 'Japanese', 'Chinese',
+    'English',
+    'Spanish',
+    'French',
+    'German',
+    'Portuguese',
+    'Turkish',
+    'Japanese',
+    'Chinese',
   ]).optional().default('English'),
   digestDay: z.number().int().min(0).max(6).optional().default(1),
   digestHour: z.number().int().min(0).max(23).optional().default(8),
 })
 
-export const deleteProjectSchema = z.object({
+export const requestDeleteProjectSchema = z.object({
+  projectKey: z.string().min(1),
   email: z.email(),
+})
+
+export const confirmDeleteProjectSchema = z.object({
+  token: z.string().min(64),
 })
 
 export const digestTriggerSchema = z.object({
@@ -47,4 +58,13 @@ export const digestTriggerSchema = z.object({
 
 export type IngestInput = z.infer<typeof ingestSchema>
 export type RegisterProjectInput = z.infer<typeof registerProjectSchema>
+
+export type RequestDeleteProjectInput = z.infer<
+  typeof requestDeleteProjectSchema
+>
+
+export type ConfirmDeleteProjectInput = z.infer<
+  typeof confirmDeleteProjectSchema
+>
+
 export type DigestTriggerInput = z.infer<typeof digestTriggerSchema>
