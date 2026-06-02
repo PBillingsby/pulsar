@@ -4,6 +4,7 @@ import { buildDigest } from '@/lib/digest/index'
 import { sendDigest } from '@/lib/email/index'
 import { digestTriggerSchema, type DigestTriggerInput } from '@/lib/validate/schemas'
 import type { ApiResponse, DigestData } from '@/types/index'
+import { prisma } from '@/db/client'
 
 export const digestRouter = new Hono()
 
