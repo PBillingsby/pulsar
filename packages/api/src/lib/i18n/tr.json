@@ -43,5 +43,14 @@
     "nextAfterWeek": "Bir haftanın ardından Pulsar davranış kalıplarını belirlemeye ve önemli içgörüleri ortaya çıkarmaya başlayacaktır.",
     "footerNote": "{name} projesi artık Pulsar beta programına kayıtlı.",
     "footerTagline": "Pulsar, ürününüzün çalışıp çalışmadığını anlamanıza yardımcı olur."
+  },
+  "deleteProject": {
+    "subject": "Projeniz için Pulsar'ı durdurmayı onaylayın",
+    "title": "Proje durdurmayı onaylayın",
+    "body": "{name} için Pulsar'ı durdurma talebi oluşturuldu. Eğer bu talebi siz yaptıysanız aşağıdan onaylayın.",
+    "button": "Pulsar'ı Durdur",
+    "warning": "Bu işlem, bu proje için olay toplamayı ve gelecekteki Pulses gönderimlerini hemen durduracaktır.",
+    "ignore": "Bu talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.",
+    "footerNote": "Bu onay bağlantısının süresi 24 saat içinde dolacaktır."
   }
 }

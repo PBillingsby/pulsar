@@ -43,5 +43,14 @@
     "nextAfterWeek": "一周后，Pulsar 将开始识别行为模式，并提供有价值的洞察。",
     "footerNote": "项目 {name} 已成功注册 Pulsar 测试版。",
     "footerTagline": "Pulsar 帮助您了解产品是否正常运作。"
+  },
+  "deleteProject": {
+    "subject": "确认停止您的 Pulsar 项目",
+    "title": "确认停止项目",
+    "body": "已收到停止 {name} 的 Pulsar 服务请求。如果这是您本人发起的操作，请在下方确认。",
+    "button": "停止 Pulsar",
+    "warning": "此操作将立即停止该项目的事件采集以及后续 Pulses 发送。",
+    "ignore": "如果您没有发起此请求，请忽略此邮件。",
+    "footerNote": "此确认链接将在 24 小时后失效。"
   }
 }

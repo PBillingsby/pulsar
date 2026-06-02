@@ -43,5 +43,14 @@
     "nextAfterWeek": "After a week, Pulsar will begin identifying behavioral patterns and surfacing insights.",
     "footerNote": "Project {name} is now registered for Pulsar beta.",
     "footerTagline": "Pulsar helps you know if your product is working."
+  },
+  "deleteProject": {
+    "subject": "Confirm stopping Pulsar for your project",
+    "title": "Confirm project stop",
+    "body": "A request was made to stop Pulsar for {name}. If this was you, confirm below.",
+    "button": "Stop Pulsar",
+    "warning": "This will immediately stop event ingestion and future Pulses for this project.",
+    "ignore": "If you did not request this, you can ignore this email.",
+    "footerNote": "This confirmation link expires in 24 hours."
   }
 }

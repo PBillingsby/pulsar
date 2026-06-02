@@ -43,5 +43,14 @@
     "nextAfterWeek": "Após uma semana, o Pulsar começará a identificar padrões comportamentais e a destacar insights relevantes.",
     "footerNote": "O projeto {name} está agora registado para a versão beta do Pulsar.",
     "footerTagline": "O Pulsar ajuda-o a saber se o seu produto está a funcionar."
+  },
+  "deleteProject": {
+    "subject": "Confirme a paragem do Pulsar para o seu projeto",
+    "title": "Confirmar paragem do projeto",
+    "body": "Foi feito um pedido para parar o Pulsar para {name}. Se foi você, confirme abaixo.",
+    "button": "Parar Pulsar",
+    "warning": "Isto irá parar imediatamente a ingestão de eventos e futuros Pulses para este projeto.",
+    "ignore": "Se não fez este pedido, pode ignorar este email.",
+    "footerNote": "Este link de confirmação expira em 24 horas."
   }
 }
