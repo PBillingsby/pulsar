@@ -1,18 +1,22 @@
 import { Resend } from 'resend'
 import type { ProjectResponse } from '@/types/index'
+import { getStrings, t, getDay, formatHour, LOCALE_MAP, Locale } from '@/lib/i18n/index'
 
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
 function renderWelcomeEmail(project: ProjectResponse): string {
-  const DAYS: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const digestDayName: string = DAYS[project.digestDay] ?? 'Monday'
-  const digestTimeFormatted: string = `${project.digestHour.toString().padStart(2, '0')}:00 UTC`
+  const s: Locale = getStrings(project.language)
+  const w: Record<string, string> = s.welcome
+  const day: string = getDay(project.language, project.digestDay)
+  const time: string = formatHour(project.digestHour)
+  const lang: string = LOCALE_MAP[project.language]?.split('-')[0] ?? 'en'
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Welcome to Pulsar</title>
+  <title>${t(w.title, { name: project.name })}</title>
 </head>
 <body style="margin:0;padding:0;background:#EEEAE3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 
@@ -39,9 +43,9 @@ function renderWelcomeEmail(project: ProjectResponse): string {
     <!-- WELCOME -->
     <tr>
       <td style="background:#ffffff;padding:36px 40px 28px;">
-        <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">You're in.</p>
-        <p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111111;line-height:1.3;letter-spacing:-0.5px;">Welcome to Pulsar, ${project.name}.</p>
-        <p style="margin:0;font-size:15px;color:#555555;line-height:1.7;">Your project is registered and your first Weekly Signal arrives tomorrow morning at 8am. Here's everything you need to get set up in the next 2 minutes.</p>
+        <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${w.youreIn}</p>
+        <p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111111;line-height:1.3;letter-spacing:-0.5px;">${t(w.title, { name: project.name })}</p>
+        <p style="margin:0;font-size:15px;color:#555555;line-height:1.7;">${t(w.body, { day, time })}</p>
       </td>
     </tr>
 
@@ -51,9 +55,9 @@ function renderWelcomeEmail(project: ProjectResponse): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:#F9F7F2;border:1px solid #E8E4DC;border-radius:12px;padding:20px 24px;">
-              <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">Your Project Key</p>
+              <p style="margin:0 0 8px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">${w.projectKeyLabel}</p>
               <p style="margin:0;font-size:20px;font-weight:800;color:#111111;font-family:'Courier New',monospace;letter-spacing:-0.5px;">${project.projectKey}</p>
-              <p style="margin:6px 0 0;font-size:12px;color:#AAAAAA;">Keep this safe — it identifies your project in Pulsar.</p>
+              <p style="margin:6px 0 0;font-size:12px;color:#AAAAAA;">${w.projectKeyNote}</p>
             </td>
           </tr>
         </table>
@@ -66,8 +70,8 @@ function renderWelcomeEmail(project: ProjectResponse): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="border-left:3px solid #22C55E;padding-left:16px;">
-              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.1em;">Step 1 — Install</p>
-              <p style="margin:0 0 10px;font-size:14px;color:#555555;">Run this in your project:</p>
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.1em;">${w.stepInstall}</p>
+              <p style="margin:0 0 10px;font-size:14px;color:#555555;">${w.stepInstallBody}</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:12px 16px;">
@@ -87,8 +91,8 @@ function renderWelcomeEmail(project: ProjectResponse): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="border-left:3px solid #22C55E;padding-left:16px;">
-              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.1em;">Step 2 — Initialise</p>
-              <p style="margin:0 0 10px;font-size:14px;color:#555555;">Add this to your app's entry point:</p>
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.1em;">${w.stepInit}</p>
+              <p style="margin:0 0 10px;font-size:14px;color:#555555;">${w.stepInitBody}</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:14px 16px;">
@@ -102,14 +106,14 @@ function renderWelcomeEmail(project: ProjectResponse): string {
       </td>
     </tr>
 
-    <!-- STEP 3 — ignoreMe -->
+    <!-- STEP 3 -->
     <tr>
       <td style="background:#ffffff;padding:0 40px 32px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="border-left:3px solid #F59E0B;padding-left:16px;">
-              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:0.1em;">Step 3 — Exclude your own visits</p>
-              <p style="margin:0 0 10px;font-size:14px;color:#555555;">Add <code style="background:#F4F4F0;padding:2px 6px;border-radius:4px;font-size:12px;">ignoreMe: true</code> on your own device so your testing doesn't pollute your data:</p>
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:0.1em;">${w.stepIgnore}</p>
+              <p style="margin:0 0 10px;font-size:14px;color:#555555;">${w.stepIgnoreBody}</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:14px 16px;">
@@ -117,29 +121,33 @@ function renderWelcomeEmail(project: ProjectResponse): string {
                   </td>
                 </tr>
               </table>
-              <p style="margin:8px 0 0;font-size:12px;color:#AAAAAA;">Remove this line in production. Only add it on devices you use for testing.</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#AAAAAA;">${w.stepIgnoreNote}</p>
             </td>
           </tr>
         </table>
       </td>
     </tr>
 
-    <!-- WHAT TO EXPECT -->
+    <!-- WHAT HAPPENS NEXT -->
     <tr>
       <td style="background:#ffffff;padding:0 40px 36px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:#1a1a1a;border-radius:12px;padding:24px 28px;">
-              <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">What happens next</p>
+              <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${w.whatNext}</p>
               <table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                  <span style="color:#22C55E;font-weight:700;">
-                    ${digestDayName} at ${digestTimeFormatted}
-                  </span> — your first Weekly Signal lands in this inbox in ${project.language}.
+                  <td style="padding-bottom:12px;">
+                    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;">
+                      <span style="color:#22C55E;font-weight:700;">${t(w.nextFirstSignal, { day, time, language: project.language })}</span>
+                    </p>
+                  </td>
                 </tr>
                 <tr>
                   <td>
-                    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;"><span style="color:#F59E0B;font-weight:700;">After a week</span> — Pulsar will start detecting behavioral patterns: which pages returning users visit, where one-time visitors drop off, and what your activation moment might be.</p>
+                    <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.6;">
+                      <span style="color:#F59E0B;font-weight:700;">${w.nextAfterWeek.split('—')[0].trim()}</span>${w.nextAfterWeek.includes('—') ? ' — ' + w.nextAfterWeek.split('—').slice(1).join('—').trim() : ''}
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -156,8 +164,8 @@ function renderWelcomeEmail(project: ProjectResponse): string {
           <tr>
             <td>
               <p style="margin:0;font-size:11px;color:#AAAAAA;line-height:1.6;">
-                You registered <strong style="color:#888888;">${project.name}</strong> for Pulsar beta.<br/>
-                <span style="color:#BBBBBB;">Pulsar — know if your product is working.</span>
+                ${t(w.footerNote, { name: project.name })}<br/>
+                <span style="color:#BBBBBB;">${w.footerTagline}</span>
               </p>
             </td>
             <td align="right" style="vertical-align:middle;">
@@ -177,10 +185,11 @@ function renderWelcomeEmail(project: ProjectResponse): string {
 }
 
 export async function sendWelcomeEmail(project: ProjectResponse): Promise<void> {
+  const s = getStrings(project.language)
   await resend.emails.send({
     from: 'Pulsar <onboarding@resend.dev>',
     to: project.email,
-    subject: `You're in! Here's your Pulsar project key`,
+    subject: s.welcome.subject,
     html: renderWelcomeEmail(project),
   })
 }

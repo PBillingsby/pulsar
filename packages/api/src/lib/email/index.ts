@@ -1,22 +1,23 @@
 import { Resend } from 'resend'
 import type { DigestData, WeeklySnapshot } from '@/types/index'
-import { getEmailStrings } from './translations'
+import { getStrings, t, LOCALE_MAP } from '@/lib/i18n/index'
 
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
-function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | null, weekTrendLabel: string): string {
+function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | null, weekTrendLabel: string, language: string): string {
+  const locale: string = LOCALE_MAP[language] ?? 'en-US'
   const recentSnapshots: WeeklySnapshot[] = snapshots.slice(1, 5).reverse()
 
   const allPoints: { label: string; rate: number | null }[] = [
     ...recentSnapshots.map((s: WeeklySnapshot) => ({
-      label: new Date(s.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      label: new Date(s.weekStart).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
       rate: s.comebackRate,
     })),
-    { label: 'This week', rate: currentRate },
+    { label: getStrings(language).weeklySignal, rate: currentRate },
   ]
 
   const validRates: number[] = allPoints
-    .map((p: { label: string; rate: number | null }) => p.rate)
+    .map((p) => p.rate)
     .filter((r): r is number => r !== null)
 
   if (validRates.length < 2) return ''
@@ -24,12 +25,11 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
   const maxRate: number = Math.max(...validRates)
   const maxBarHeight: number = 48
 
-  const bars: string = allPoints.map((point: { label: string; rate: number | null }, i: number) => {
+  const bars: string = allPoints.map((point, i) => {
     const isLast: boolean = i === allPoints.length - 1
     const rate: number = point.rate ?? 0
     const height: number = maxRate > 0 ? Math.round((rate / maxRate) * maxBarHeight) : 4
     const isEmpty: boolean = point.rate === null
-
     const prevRate: number | null = i > 0 ? allPoints[i - 1].rate : null
     const isDown: boolean = prevRate !== null && rate < prevRate
     const barColor: string = isEmpty ? '#E5E7EB' : isLast && isDown ? '#EF4444' : isLast ? '#22C55E' : '#D1D5DB'
@@ -67,9 +67,7 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
             <td style="background:#F9F7F2;border:1px solid #E8E4DC;border-radius:14px;padding:20px 24px;">
               <p style="margin:0 0 16px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.12em;">${weekTrendLabel}</p>
               <table cellpadding="0" cellspacing="0" style="width:100%;">
-                <tr style="vertical-align:bottom;">
-                  ${bars}
-                </tr>
+                <tr style="vertical-align:bottom;">${bars}</tr>
               </table>
             </td>
           </tr>
@@ -79,15 +77,11 @@ function renderTrendChart(snapshots: WeeklySnapshot[], currentRate: number | nul
 }
 
 function renderEmail(digest: DigestData, language: string): string {
-  const t = getEmailStrings(language)
+  const s = getStrings(language)
 
-  const comebackDisplay: string = digest.comebackRate !== null
-    ? `${digest.comebackRate}%`
-    : 'Not enough data yet'
+  const comebackDisplay: string = digest.comebackRate !== null ? `${digest.comebackRate}%` : '—'
 
-  const trendValue: number | null = digest.comebackTrend
-    ? parseInt(digest.comebackTrend)
-    : null
+  const trendValue: number | null = digest.comebackTrend ? parseInt(digest.comebackTrend) : null
 
   const trendBg: string = trendValue === null ? '#F3F4F6'
     : trendValue > 0 ? '#DCFCE7'
@@ -115,26 +109,25 @@ function renderEmail(digest: DigestData, language: string): string {
         : '#991B1B'
 
   const trendHtml: string = digest.comebackTrend
-    ? `<tr><td style="padding: 6px 0 0;">
-      <span style="display:inline-block;background:${trendBg};color:${trendTextColor};font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;">${digest.comebackTrend}</span>
-     </td></tr>`
+    ? `<tr><td style="padding:6px 0 0;">
+        <span style="display:inline-block;background:${trendBg};color:${trendTextColor};font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 10px;border-radius:100px;">${digest.comebackTrend}</span>
+       </td></tr>`
     : ''
 
-  const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate, t.weekTrend)
+  const trendChart: string = renderTrendChart(digest.snapshots, digest.comebackRate, s.weekTrend, language)
 
   function highlightPaths(text: string): string {
     return text.replace(/(\/[a-z0-9\-\/]+)/g, '<code style="background:#F4F4F0;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:13px;color:#111;">$1</code>')
   }
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${LOCALE_MAP[language]?.split('-')[0] ?? 'en'}">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Your Product Pulse</title>
+  <title>${s.digestSubject}</title>
 </head>
 <body style="margin:0;padding:0;background:#EEEAE3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#EEEAE3;padding:40px 16px;">
   <tr><td align="center">
   <table cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
@@ -158,7 +151,7 @@ function renderEmail(digest: DigestData, language: string): string {
     <!-- WEEKLY SIGNAL -->
     <tr>
       <td style="background:#ffffff;padding:32px 40px 24px;">
-        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${t.weeklySignal}</p>
+        <p style="margin:0 0 10px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${s.weeklySignal}</p>
         <p style="margin:0;font-size:22px;font-weight:500;color:#111111;line-height:1.45;">${digest.summary}</p>
       </td>
     </tr>
@@ -169,7 +162,7 @@ function renderEmail(digest: DigestData, language: string): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:${comebackBg};border:1px solid ${comebackBorder};border-radius:14px;padding:28px 32px;">
-              <p style="margin:0;font-size:10px;font-weight:700;color:${comebackLabelColor};text-transform:uppercase;letter-spacing:0.12em;">${t.comebackRate}</p>
+              <p style="margin:0;font-size:10px;font-weight:700;color:${comebackLabelColor};text-transform:uppercase;letter-spacing:0.12em;">${s.comebackRate}</p>
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:bottom;padding-right:12px;">
@@ -177,7 +170,7 @@ function renderEmail(digest: DigestData, language: string): string {
                     ${trendHtml}
                   </td>
                   <td style="vertical-align:bottom;padding-bottom:6px;">
-                    <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">${digest.returning} ${t.ofVisitorsReturned}</p>
+                    <p style="margin:0;font-size:13px;color:#78716C;line-height:1.5;">${digest.returning} ${s.ofVisitorsReturned}</p>
                   </td>
                 </tr>
               </table>
@@ -194,7 +187,7 @@ function renderEmail(digest: DigestData, language: string): string {
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="background:#1a1a1a;border-radius:14px;padding:28px 32px;">
-              <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${t.insight}</p>
+              <p style="margin:0 0 12px;font-size:10px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.12em;">${s.insight}</p>
               <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.8);line-height:1.8;font-weight:300;">${highlightPaths(digest.insight)}</p>
             </td>
           </tr>
@@ -211,7 +204,7 @@ function renderEmail(digest: DigestData, language: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#F4F4F0;border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">${t.visitors}</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.1em;">${s.visitors}</p>
                     <p style="margin:6px 0 0;font-size:32px;font-weight:800;color:#111111;letter-spacing:-1px;">${digest.totalVisitors}</p>
                   </td>
                 </tr>
@@ -221,7 +214,7 @@ function renderEmail(digest: DigestData, language: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.1em;">${t.returned}</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.1em;">${s.returned}</p>
                     <p style="margin:6px 0 0;font-size:32px;font-weight:800;color:#111111;letter-spacing:-1px;">${digest.returning}</p>
                   </td>
                 </tr>
@@ -231,9 +224,9 @@ function renderEmail(digest: DigestData, language: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:${digest.isActivationPage ? '#FFF7ED' : '#F4F4F0'};border:${digest.isActivationPage ? '1px solid #FED7AA' : 'none'};border-radius:10px;padding:18px 20px;">
-                    <p style="margin:0;font-size:10px;font-weight:700;color:${digest.isActivationPage ? '#C2410C' : '#999'};text-transform:uppercase;letter-spacing:0.1em;">${digest.isActivationPage ? t.keyPage : t.topPage}</p>
+                    <p style="margin:0;font-size:10px;font-weight:700;color:${digest.isActivationPage ? '#C2410C' : '#999'};text-transform:uppercase;letter-spacing:0.1em;">${digest.isActivationPage ? s.keyPage : s.topPage}</p>
                     <p style="margin:6px 0 0;font-size:18px;font-weight:800;color:#111111;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${digest.keyPage || 'homepage'}</p>
-                    ${digest.isActivationPage ? `<p style="margin:4px 0 0;font-size:10px;color:#C2410C;">${t.returnersVisit}</p>` : ''}
+                    ${digest.isActivationPage ? `<p style="margin:4px 0 0;font-size:10px;color:#C2410C;">${s.returnersVisit}</p>` : ''}
                   </td>
                 </tr>
               </table>
@@ -250,8 +243,8 @@ function renderEmail(digest: DigestData, language: string): string {
           <tr>
             <td>
               <p style="margin:0;font-size:11px;color:#AAAAAA;line-height:1.6;">
-                ${t.receiving} <strong style="color:#888;">${digest.projectKey}</strong>.<br/>
-                <span style="color:#BBBBBB;">${t.footer}</span>
+                ${s.receiving} <strong style="color:#888;">${digest.projectKey}</strong>.<br/>
+                <span style="color:#BBBBBB;">${s.footer}</span>
               </p>
             </td>
             <td align="right" style="vertical-align:middle;">
@@ -265,7 +258,6 @@ function renderEmail(digest: DigestData, language: string): string {
   </table>
   </td></tr>
 </table>
-
 </body>
 </html>`
 }
@@ -275,11 +267,11 @@ export async function sendDigest(
   digest: DigestData,
   language: string = 'English'
 ): Promise<void> {
-  const t = getEmailStrings(language)
+  const s = getStrings(language)
   await resend.emails.send({
     from: 'Pulsar <onboarding@resend.dev>',
     to,
-    subject: `${t.subject} — ${digest.date}`,
+    subject: `${s.digestSubject} — ${digest.date}`,
     html: renderEmail(digest, language),
   })
 }
