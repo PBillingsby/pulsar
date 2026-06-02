@@ -16,6 +16,8 @@ interface SnapshotSeed {
   returnerTopPage: string | null
   bouncerTopPage: string | null
   returnerFirstPage: string | null
+  activationReachRate: number | null
+  activationPageViews: number | null
 }
 
 const snapshots: SnapshotSeed[] = [
@@ -33,6 +35,8 @@ const snapshots: SnapshotSeed[] = [
     returnerTopPage: 'https://myapp.com/dashboard',
     bouncerTopPage: 'https://myapp.com/',
     returnerFirstPage: 'https://myapp.com/signup',
+    activationReachRate: null,
+    activationPageViews: null,
   },
   {
     projectKey: PROJECT_KEY,
@@ -48,6 +52,8 @@ const snapshots: SnapshotSeed[] = [
     returnerTopPage: 'https://myapp.com/create-workspace',
     bouncerTopPage: 'https://myapp.com/',
     returnerFirstPage: 'https://myapp.com/signup',
+    activationReachRate: 28,
+    activationPageViews: 11,
   },
   {
     projectKey: PROJECT_KEY,
@@ -63,6 +69,8 @@ const snapshots: SnapshotSeed[] = [
     returnerTopPage: 'https://myapp.com/connect-integration',
     bouncerTopPage: 'https://myapp.com/',
     returnerFirstPage: 'https://myapp.com/signup',
+    activationReachRate: 52,
+    activationPageViews: 27,
   },
   {
     projectKey: PROJECT_KEY,
@@ -78,6 +86,8 @@ const snapshots: SnapshotSeed[] = [
     returnerTopPage: 'https://myapp.com/connect-integration',
     bouncerTopPage: 'https://myapp.com/',
     returnerFirstPage: 'https://myapp.com/signup',
+    activationReachRate: 68,
+    activationPageViews: 41,
   },
 ]
 
@@ -89,7 +99,7 @@ for (const snap of snapshots) {
   })
 }
 
-console.log('Seeded 4 historical snapshots')
-console.log('Story: activation page evolved from none → create-workspace → connect-integration')
-console.log('Trend: 15% → 22% → 35% → 46%')
+console.log('Seeded 4 historical snapshots with funnel completion data')
+console.log('Activation reach trend: n/a → 28% → 52% → 68%')
+console.log('Comeback trend: 15% → 22% → 35% → 46%')
 await prisma.$disconnect()
