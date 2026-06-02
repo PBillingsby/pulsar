@@ -31,10 +31,14 @@ export const registerProjectSchema = z.object({
   domain: z.string().optional(),
   language: z.enum([
     'English', 'Spanish', 'French', 'German',
-    'Portuguese', 'Turkish', 'Italian', 'Dutch',
+    'Portuguese', 'Turkish', 'Japanese', 'Chinese',
   ]).optional().default('English'),
   digestDay: z.number().int().min(0).max(6).optional().default(1),
   digestHour: z.number().int().min(0).max(23).optional().default(8),
+})
+
+export const deleteProjectSchema = z.object({
+  email: z.email(),
 })
 
 export const digestTriggerSchema = z.object({
