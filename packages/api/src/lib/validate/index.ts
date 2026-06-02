@@ -1,6 +1,9 @@
 import type { IncomingEvent } from '@/types/index'
 
-const VALID_TYPES = ['page_view', 'click', 'session_end'] as const
+const VALID_TYPES: ReadonlySet<string> = new Set<IncomingEvent['type']>([
+  'page_view', 'click', 'rage_click', 'scroll_depth',
+  'session_end', 'form_submit', 'copy', 'tab_focus', 'tab_blur'
+])
 
 export function isValidEvent(event: unknown): event is IncomingEvent {
   if (!event || typeof event !== 'object') return false
@@ -9,7 +12,7 @@ export function isValidEvent(event: unknown): event is IncomingEvent {
 
   return (
     typeof e.type === 'string' &&
-    VALID_TYPES.includes(e.type as typeof VALID_TYPES[number]) &&
+    VALID_TYPES.has(e.type as IncomingEvent['type']) &&
     typeof e.sessionId === 'string' &&
     typeof e.projectKey === 'string' &&
     typeof e.url === 'string' &&
