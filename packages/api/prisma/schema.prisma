@@ -47,10 +47,24 @@ model Project {
   digestHour  Int      @default(8)   // UTC hour
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
 
   @@index([projectKey])
   @@index([email])
   @@index([digestDay, digestHour])
+}
+
+model ProjectDeletionToken {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  projectKey String
+  email      String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([projectKey])
+  @@index([email])
 }
 
 model WeeklySnapshot {
