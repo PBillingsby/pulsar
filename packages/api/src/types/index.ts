@@ -49,6 +49,7 @@ export interface FilterResult {
 }
 
 export interface DigestData {
+  email: string
   projectKey: string
   date: string
   summary: string
