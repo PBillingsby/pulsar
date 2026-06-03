@@ -20,7 +20,7 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     getStats(projectKey),
     getRecentSnapshots(projectKey),
     detectPatterns(projectKey),
-    prisma.project.findUnique({ where: { projectKey }, select: { language: true } }),
+    prisma.project.findUnique({ where: { projectKey }, select: { language: true, email: true } }),
   ])
 
   const language = project?.language ?? 'English'
@@ -69,6 +69,7 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
 
   return {
     projectKey,
+    email: project?.email ?? '',
     date: new Date().toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }),
     summary: lines.join(' '),
     comebackRate: current.comebackRate,
