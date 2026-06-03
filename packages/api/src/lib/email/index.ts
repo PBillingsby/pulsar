@@ -246,6 +246,8 @@ function renderEmail(digest: DigestData, language: string): string {
                 ${s.receiving} <strong style="color:#888;">${digest.projectKey}</strong>.<br/>
                 <span style="color:#BBBBBB;">${s.footer}</span>
               </p>
+              <p style="margin:8px 0 0;font-size:11px;">
+              <a href="${process.env.APP_URL ?? 'http://localhost:3000'}/delete?projectKey=${digest.projectKey}&email=${encodeURIComponent(digest.email)}" style="color:#AAAAAA;text-decoration:underline;">${s.unsubscribe}</a>              </p>
             </td>
             <td align="right" style="vertical-align:middle;">
               <p style="margin:0;font-size:13px;font-weight:800;color:#BBBBBB;letter-spacing:-0.3px;">PULSAR<span style="display:inline-block;width:5px;height:5px;background:#22C55E;border-radius:50%;margin-left:3px;vertical-align:middle;margin-bottom:2px;"></span></p>
@@ -254,7 +256,6 @@ function renderEmail(digest: DigestData, language: string): string {
         </table>
       </td>
     </tr>
-
   </table>
   </td></tr>
 </table>
