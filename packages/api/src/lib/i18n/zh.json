@@ -24,6 +24,8 @@
   "trendUnchanged": "与上周持平",
   "digestSubject": "Pulsar Insight",
   "days": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+  "unsubscribe": "取消订阅",
+  "unsubscribeNote": "您将不再收到此项目的 Pulsar 摘要邮件。",
   "welcome": {
     "subject": "您已加入！这是您的 Pulsar 项目密钥",
     "youreIn": "您已加入。",

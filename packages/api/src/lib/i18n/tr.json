@@ -24,6 +24,8 @@
   "trendUnchanged": "geçen haftaya göre değişmedi",
   "digestSubject": "Pulsar Insight",
   "days": ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"],
+  "unsubscribe": "Abonelikten çık",
+  "unsubscribeNote": "Bu proje için artık Pulsar özetlerini almayacaksınız.",
   "welcome": {
     "subject": "İçeridesiniz! İşte Pulsar proje anahtarınız",
     "youreIn": "İçeridesiniz.",

@@ -24,6 +24,8 @@
   "trendUnchanged": "unverändert gegenüber letzter Woche",
   "digestSubject": "Pulsar Insight",
   "days": ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+  "unsubscribe": "Abmelden",
+  "unsubscribeNote": "Sie erhalten keine Pulsar-Digests mehr für dieses Projekt.",
   "welcome": {
     "subject": "Sie sind dabei! Hier ist Ihr Pulsar-Projektschlüssel",
     "youreIn": "Sie sind dabei.",
