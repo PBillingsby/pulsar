@@ -82,8 +82,13 @@ function buildInsightPayload(
     observationFacts.push(`Users who reach ${activationPath} are significantly more likely to return`)
   }
 
-  interpretationCandidates.push(top.headline)
-
+  interpretationCandidates.push(
+    top.type === 'positive_trend' && activationPath
+      ? `The rise in comeback rate may be connected to users reaching ${activationPath} — this page appears to be playing a role in retention`
+      : top.type === 'positive_trend'
+        ? `Something shifted this week that appears to be driving more users back to the product`
+        : top.headline
+  )
   return {
     observationFacts,
     interpretationCandidates,
