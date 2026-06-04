@@ -1,6 +1,6 @@
 import { prisma } from '@/db/client'
 
-const PROJECT_KEY: string = 'my-app-xgb9f8'
+const PROJECT_KEY: string = 'testing-d2rl75'
 
 interface SnapshotSeed {
   projectKey: string
