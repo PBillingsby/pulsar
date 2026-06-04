@@ -37,6 +37,7 @@ export function detectRetentionRisk(input: SignalInput): RankedSignal | null {
     urgency: 'critical',
     headline: `Comeback rate dropped ${drop}pts this week`,
     evidence,
+    recommendedAction: "Compare this week's sessions to last week and look for what changed in the onboarding or activation flow"
   }
 }
 
@@ -67,5 +68,6 @@ export function detectPositiveTrend(input: SignalInput): RankedSignal | null {
     urgency: 'positive',
     headline: `Comeback rate up ${rise}pts this week`,
     evidence,
+    recommendedAction: "Identify what changed this week and make sure you can repeat it"
   }
 }

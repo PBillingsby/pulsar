@@ -32,5 +32,6 @@ export function detectHighIntentNoConvert(input: SignalInput): RankedSignal | nu
     urgency: 'monitor',
     headline: `High engagement on ${toPath(topPage.url)} but low conversion`,
     evidence,
+    recommendedAction: "Review the conversion flow from {page} — identify what's preventing users from completing the next step"
   }
 }

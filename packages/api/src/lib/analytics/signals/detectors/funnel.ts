@@ -38,5 +38,6 @@ export function detectFunnelDrop(input: SignalInput): RankedSignal | null {
     urgency: 'critical',
     headline: `Funnel to ${activationPath} dropped ${drop}pts this week`,
     evidence,
+    recommendedAction: "Check what changed on {page} this week — look for UI changes, copy changes, or broken steps"
   }
 }

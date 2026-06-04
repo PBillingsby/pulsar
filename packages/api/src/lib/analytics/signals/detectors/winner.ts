@@ -47,5 +47,6 @@ export function detectHiddenWinner(input: SignalInput): RankedSignal | null {
     urgency: 'positive',
     headline: `${path} appears to be a hidden retention driver`,
     evidence,
+    recommendedAction: "Double down on {page} — understand what users are doing there and make sure it's easy to find"
   }
 }
