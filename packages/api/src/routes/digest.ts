@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { buildDigest } from '@/lib/digest/index'
+import { prisma } from '@/db/client'
+
 import { sendDigest } from '@/lib/email/index'
 import { digestTriggerSchema, type DigestTriggerInput } from '@/lib/validate/schemas'
+import { captureWeeklySnapshot } from '@/lib/analytics/snapshots'
 import type { ApiResponse, DigestData } from '@/types/index'
-import { prisma } from '@/db/client'
 
 export const digestRouter = new Hono()
 
@@ -29,6 +31,7 @@ digestRouter.post('/:projectKey', zValidator('json', digestTriggerSchema), async
     }, 404)
   }
 
+  await captureWeeklySnapshot(projectKey)
   const digest: DigestData = await buildDigest(projectKey)
   await sendDigest(email, digest, project.language ?? 'English')
 
