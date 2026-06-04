@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { DigestContext, WeeklySnapshot } from '@/types/index'
+import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
 import { rankSignals } from '@/lib/analytics/signals/index'
 import type { RankedSignal } from '@/lib/analytics/signals/types'
+import type { CorrelatedSignal } from '@/lib/analytics/signals/correlate'
 
 const client: Anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -11,93 +12,135 @@ function toPath(url: string): string {
   try { return new URL(url).pathname } catch { return url }
 }
 
-function buildPatternHistory(snapshots: WeeklySnapshot[]): string {
-  const validSnapshots: WeeklySnapshot[] = snapshots
-    .filter((s: WeeklySnapshot) => s.comebackRate !== null)
-    .slice(0, 4)
-    .reverse()
-
-  if (validSnapshots.length < 2) return 'Insufficient history to detect pattern changes.'
-
-  const lines: string[] = validSnapshots.map((s: WeeklySnapshot) => {
-    const week: string = new Date(s.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    const parts: string[] = [
-      `Week of ${week}:`,
-      `comeback ${s.comebackRate}%`,
-      s.activationPage ? `activation page ${toPath(s.activationPage)}` : 'no activation page',
-      s.activationReachRate !== null ? `activation reach ${s.activationReachRate}%` : '',
-      s.avgDepthReturners ? `returner depth ${s.avgDepthReturners} pages` : '',
-      s.returnerFirstPage ? `returners start on ${toPath(s.returnerFirstPage)}` : '',
-    ].filter(Boolean)
-    return parts.join(', ')
-  })
-
-  return lines.join('\n')
-}
-
-function buildRankedSignalsContext(signals: RankedSignal[]): string {
-  if (signals.length === 0) return 'No signals above threshold this week.'
-
-  return signals.map((s: RankedSignal, i: number) => {
-    const prefix: string = `PRIORITY ${i + 1} [${s.urgency.toUpperCase()}] — ${s.type.replace(/_/g, ' ').toUpperCase()}`
-    const headline: string = s.headline
-    const evidence: string = s.evidence.map((e: string) => `  - ${e}`).join('\n')
-    return `${prefix}\n${headline}\n${evidence}`
-  }).join('\n\n')
-}
-
-function buildPrompt(ctx: DigestContext, signals: RankedSignal[]): string {
-  const { current, snapshots } = ctx
-
-  const patternHistory: string = buildPatternHistory(snapshots)
-  const rankedSignals: string = buildRankedSignalsContext(signals)
+function buildInsightPayload(
+  signals: RankedSignal[],
+  correlated: CorrelatedSignal | null,
+  patterns: BehavioralPatterns,
+  current: PulsarStats
+): {
+  observationFacts: string[]
+  interpretationCandidates: string[]
+  recommendedAction: string
+  dataVolume: string
+} {
+  const activationPath: string | null = patterns.activationPage
+    ? toPath(patterns.activationPage)
+    : null
 
   const dataVolume: string = current.totalVisitors < 20
-    ? 'low (under 20 visitors — treat as directional only)'
+    ? 'low — under 20 visitors, treat as directional only'
     : current.totalVisitors < 50
-      ? 'moderate (20-50 visitors — patterns emerging but not statistically reliable)'
-      : 'sufficient (50+ visitors — patterns are meaningful)'
+      ? 'moderate — patterns emerging but not statistically reliable'
+      : 'sufficient — patterns are meaningful'
 
-  const topSignal: RankedSignal | undefined = signals[0]
-  const hasNegativeSignal: boolean = signals.some(
-    (s: RankedSignal) => s.urgency === 'critical'
-  )
+  const observationFacts: string[] = []
+  const interpretationCandidates: string[] = []
 
-  return `You are a careful product analyst writing a weekly digest for an early-stage founder. The signal ranking layer has already done the analysis — your job is to communicate the most important findings clearly and concisely.
+  if (correlated) {
+    // correlated signal — pull facts from contributing signals
+    const frictionSignal: RankedSignal | undefined = signals.find(
+      (s: RankedSignal) => s.type === 'activation_friction'
+    )
+    const retentionSignal: RankedSignal | undefined = signals.find(
+      (s: RankedSignal) => s.type === 'retention_risk'
+    )
+    const funnelSignal: RankedSignal | undefined = signals.find(
+      (s: RankedSignal) => s.type === 'funnel_drop'
+    )
 
-DATA VOLUME: ${dataVolume}
+    if (frictionSignal) observationFacts.push(frictionSignal.evidence[0])
+    if (retentionSignal) observationFacts.push(retentionSignal.evidence[0])
+    if (funnelSignal) observationFacts.push(funnelSignal.evidence[0])
+    if (activationPath) {
+      observationFacts.push(`Users who reach ${activationPath} are significantly more likely to return`)
+    }
 
-THIS WEEK:
-- Comeback rate: ${current.comebackRate !== null ? `${current.comebackRate}%` : 'insufficient data'}
-- Total visitors: ${current.totalVisitors}
+    interpretationCandidates.push(`There may be friction on a page that plays an important role in activation`)
 
-PATTERN HISTORY (oldest to newest):
-${patternHistory}
+    const topContributor: RankedSignal | undefined = frictionSignal ?? retentionSignal ?? signals[0]
+    return {
+      observationFacts,
+      interpretationCandidates,
+      recommendedAction: topContributor?.recommendedAction ?? `Review session recordings on ${activationPath ?? 'your activation page'}`,
+      dataVolume,
+    }
+  }
 
-RANKED SIGNALS (pre-analysed, in priority order):
-${rankedSignals}
+  // no correlation — use top signal only
+  const top: RankedSignal | undefined = signals[0]
+  if (!top) {
+    return {
+      observationFacts: [`${current.totalVisitors} visitors this week`, `Comeback rate: ${current.comebackRate ?? 'unavailable'}%`],
+      interpretationCandidates: ['No signals above threshold this week'],
+      recommendedAction: 'Keep driving traffic and check back next week',
+      dataVolume,
+    }
+  }
 
-${topSignal ? `LEAD WITH: ${topSignal.headline}` : ''}
-${hasNegativeSignal ? 'TONE: There is something worth investigating. Create urgency without alarm.' : 'TONE: Positive or stable week. Be encouraging but grounded.'}
+  observationFacts.push(...top.evidence.slice(0, 2))
+  if (activationPath) {
+    observationFacts.push(`Users who reach ${activationPath} are significantly more likely to return`)
+  }
 
-Write exactly 3 sentences. Rules:
-- Sentence 1: Lead with the highest priority signal. State the implication first, then the supporting data. Not "Your comeback rate fell X points" — instead "Something may have broken in your activation flow this week — comeback rate dropped Xpts and rage clicks on /page suggest friction."
-- Sentence 2: Surface the second ranked signal only. If no second signal exists, add one grounding observation from the pattern history.
-- Sentence 3: One concrete action. The most important investigation step only.
-- Never mention more than two signals total across all three sentences.
-- Never claim causation. Use "suggests", "appears", "may indicate".
-- Never use "strongly", "clearly", "definitely", "proof", "crashed", "surged".
-- Always refer to pages by path only, never full URLs.
-- If data volume is low, note it in sentence 1.
-- Do not use bullet points, markdown, or headers.
-- Do not start with "Based on", "Looking at", or "Your data shows".
-- Write the entire response in ${ctx.language}. Do not translate idioms literally — use natural phrasing a native ${ctx.language} speaker would use.
-- Never editorialize about importance. If a page matters, the signal data shows it 
-— Do not add phrases like "right where it matters most", "most critical", or "before it even has a chance".
+  interpretationCandidates.push(top.headline)
+
+  return {
+    observationFacts,
+    interpretationCandidates,
+    recommendedAction: top.recommendedAction,
+    dataVolume,
+  }
+}
+
+function buildPrompt(
+  ctx: DigestContext,
+  signals: RankedSignal[],
+  correlated: CorrelatedSignal | null
+): string {
+  const { current, snapshots, patterns } = ctx
+
+  const payload = buildInsightPayload(signals, correlated, patterns, current)
+
+  return `You are a copywriter writing a 3-sentence product insight for an early-stage founder. You are not an analyst — the analysis is already done. Your only job is to rewrite the structured data below into clear, human sentences. Do not add new information. Do not connect facts that are not listed together.
+ 
+DATA VOLUME: ${payload.dataVolume}
+ 
+OBSERVATION FACTS (use these in sentence 1):
+${payload.observationFacts.map((f: string) => `- ${f}`).join('\n')}
+ 
+INTERPRETATION CANDIDATES (choose the most grounded one for sentence 2):
+${payload.interpretationCandidates.map((c: string) => `- ${c}`).join('\n')}
+ 
+RECOMMENDED ACTION (use this exactly in sentence 3):
+${payload.recommendedAction}
+ 
+Write exactly 3 sentences:
+- Sentence 1: State the observation facts. Plain, factual, no interpretation.
+- Sentence 2: State the single most grounded interpretation candidate. Use "suggests", "appears", or "may indicate". Do not go beyond what the facts show.
+- Sentence 3: Use the recommended action exactly as written. You may rephrase slightly for flow but do not change the meaning.
+ 
+HARD RULES:
+- Do not add information not listed above
+- Do not connect facts that are not explicitly paired
+- Never claim causation
+- Never use: strongly, clearly, definitely, proof, crashed, surged
+- Never say "right where it matters most", "most critical", "before it even has a chance"
+- Refer to pages by path only, never full URLs
+- Do not repeat the page name more than twice across all three sentences
+- No bullet points, markdown, or headers
+- Do not start with "Based on", "Looking at", or "Your data shows"
+- Sentence 1 must state ONE observation only — the most important signal fact. Do not list multiple signals.
+- Sentence 3 must be a direct instruction. Never use "would be", "it's worth", or "a useful next step".
+- Write in ${ctx.language}. Use natural phrasing — do not translate idioms literally.
 `
 }
 
-function generateRuleBasedInsight(ctx: DigestContext, signals: RankedSignal[]): string {
+
+function generateRuleBasedInsight(
+  ctx: DigestContext,
+  signals: RankedSignal[],
+  correlated: CorrelatedSignal | null
+): string {
   const { current, snapshots }: DigestContext = ctx
 
   const previousWeek: WeeklySnapshot | undefined = snapshots.find(
@@ -117,13 +160,15 @@ function generateRuleBasedInsight(ctx: DigestContext, signals: RankedSignal[]): 
         : `Comeback rate held steady at ${current.comebackRate}% this week.`
 
   const topSignal: RankedSignal | undefined = signals[0]
-  const signalPart: string = topSignal
-    ? topSignal.headline
-    : snapshots[0]?.activationPage
-      ? `Users who reach ${toPath(snapshots[0].activationPage)} appear more likely to return.`
-      : current.topPages[0]?.url
-        ? `Most activity this week is concentrated on ${toPath(current.topPages[0].url)}.`
-        : 'No clear activation pattern detected yet.'
+  const signalPart: string = correlated
+    ? correlated.headline
+    : topSignal
+      ? topSignal.headline
+      : snapshots[0]?.activationPage
+        ? `Users who reach ${toPath(snapshots[0].activationPage)} appear more likely to return.`
+        : current.topPages[0]?.url
+          ? `Most activity this week is concentrated on ${toPath(current.topPages[0].url)}.`
+          : 'No clear activation pattern detected yet.'
 
   const actionPart: string = comebackDelta !== null && comebackDelta < -10
     ? 'Investigate what changed this week in your onboarding or activation flow.'
@@ -139,7 +184,7 @@ export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
     return 'Not enough visitors yet to surface meaningful patterns. Keep driving traffic and check back next week.'
   }
 
-  const signals: RankedSignal[] = rankSignals({
+  const { correlated, signals } = rankSignals({
     current: ctx.current,
     patterns: ctx.patterns,
     snapshots: ctx.snapshots,
@@ -149,15 +194,15 @@ export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
     const message: Anthropic.Message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
-      messages: [{ role: 'user' as const, content: buildPrompt(ctx, signals) }],
+      messages: [{ role: 'user' as const, content: buildPrompt(ctx, signals, correlated) }],
     })
 
     const block: Anthropic.ContentBlock = message.content[0]
-    if (block.type !== 'text') return generateRuleBasedInsight(ctx, signals)
+    if (block.type !== 'text') return generateRuleBasedInsight(ctx, signals, correlated)
     const textBlock: Anthropic.TextBlock = block as Anthropic.TextBlock
     return textBlock.text.trim()
   } catch (err: unknown) {
     console.error('[Pulsar] LLM insight failed, using rule-based fallback:', err)
-    return generateRuleBasedInsight(ctx, signals)
+    return generateRuleBasedInsight(ctx, signals, correlated)
   }
 }
