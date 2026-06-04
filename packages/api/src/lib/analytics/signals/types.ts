@@ -14,6 +14,7 @@ export interface RankedSignal {
   urgency: Urgency
   headline: string
   evidence: string[]
+  recommendedAction: string
 }
 
 export interface SignalInput {
