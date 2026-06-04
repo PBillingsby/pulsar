@@ -1,8 +1,6 @@
-import { getStats } from '@/lib/analytics/index'
-import { generateDigest } from '@/lib/digest/index'
+import { buildDigest } from '@/lib/digest/index'
 
-const stats = await getStats('test-key')
-const digest = generateDigest(stats)
+const digest = await buildDigest('dropframe-qdkuz0')
 
 console.log('\n--- TODAY\'S PULSE ---')
 console.log(`Date: ${digest.date}`)
