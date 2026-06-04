@@ -26,18 +26,57 @@ const mockFindUnique = mock(async () => ({
   createdAt: new Date('2026-01-01'),
 }))
 
+const mockFindFirst = mock(async () => ({
+  projectKey: 'my-app-abc123',
+  name: 'My App',
+  email: 'founder@myapp.com',
+  domain: null,
+  beta: true,
+  language: 'English',
+  digestDay: 1,
+  digestHour: 8,
+  createdAt: new Date('2026-01-01'),
+  deletedAt: null,
+}))
+
 const mockUpdate = mock(async () => ({
   projectKey: 'my-app-abc123',
-  beta: false,
+  deletedAt: new Date(),
 }))
+
+const mockTokenCreate = mock(async () => ({
+  token: 'a'.repeat(64),
+}))
+
+const mockTokenFindUnique = mock(async () => ({
+  token: 'a'.repeat(64),
+  projectKey: 'my-app-abc123',
+  email: 'founder@myapp.com',
+  expiresAt: new Date(Date.now() + 60_000),
+  usedAt: null,
+}))
+
+const mockTokenUpdate = mock(async () => ({
+  token: 'a'.repeat(64),
+  usedAt: new Date(),
+}))
+
+const mockTransaction = mock(async () => [])
 
 mock.module('@/db/client', () => ({
   prisma: {
     project: {
       create: mockCreate,
       findUnique: mockFindUnique,
+      findFirst: mockFindFirst,
       update: mockUpdate,
     },
+    projectDeletionToken: {
+      create: mockTokenCreate,
+      findUnique: mockTokenFindUnique,
+      update: mockTokenUpdate,
+    },
+    $transaction: mockTransaction,
   },
 }))
 
@@ -134,79 +173,135 @@ describe('GET /projects/:projectKey', () => {
   })
 
   it('returns 404 for unknown project key', async () => {
-    mockFindUnique.mockImplementationOnce(async () => null)
+    mockFindFirst.mockImplementationOnce(async () => null)
+
     const res = await app.request('/projects/unknown-key')
     const body = await res.json()
+
     expect(res.status).toBe(404)
     expect(body.success).toBe(false)
     expect(body.error).toBe('Project not found')
   })
 })
 
-describe('DELETE /projects/:projectKey', () => {
+describe('POST /projects/delete-request', () => {
   beforeEach(() => {
-    mockFindUnique.mockClear()
-    mockUpdate.mockClear()
+    mockFindFirst.mockClear()
+    mockTokenCreate.mockClear()
+    mockTokenFindUnique.mockClear()
+    mockTokenUpdate.mockClear()
+    mockTransaction.mockClear()
   })
 
-  it('deactivates a project with matching email', async () => {
-    const res = await app.request('/projects/my-app-abc123', {
-      method: 'DELETE',
+  it('creates a deletion token for a matching project and email', async () => {
+    const res = await app.request('/projects/delete-request', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'founder@myapp.com' }),
+      body: JSON.stringify({
+        projectKey: 'my-app-abc123',
+        email: 'founder@myapp.com',
+      }),
     })
+
     const body = await res.json()
+
     expect(res.status).toBe(200)
     expect(body.success).toBe(true)
-    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    expect(mockTokenCreate).toHaveBeenCalledTimes(1)
   })
 
-  it('rejects wrong email', async () => {
-    const res = await app.request('/projects/my-app-abc123', {
-      method: 'DELETE',
+  it('returns success without creating a token for unknown project/email', async () => {
+    mockFindFirst.mockImplementationOnce(async () => null)
+
+    const res = await app.request('/projects/delete-request', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'wrong@email.com' }),
+      body: JSON.stringify({
+        projectKey: 'unknown-key',
+        email: 'founder@myapp.com',
+      }),
     })
+
     const body = await res.json()
-    expect(res.status).toBe(403)
-    expect(body.success).toBe(false)
-    expect(body.error).toBe('Email does not match this project')
-    expect(mockUpdate).not.toHaveBeenCalled()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(mockTokenCreate).not.toHaveBeenCalled()
   })
 
-  it('returns 404 for unknown project key', async () => {
-    mockFindUnique.mockImplementationOnce(async () => null)
-    const res = await app.request('/projects/unknown-key', {
-      method: 'DELETE',
+  it('rejects missing projectKey', async () => {
+    const res = await app.request('/projects/delete-request', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'founder@myapp.com' }),
+      body: JSON.stringify({
+        email: 'founder@myapp.com',
+      }),
     })
-    const body = await res.json()
-    expect(res.status).toBe(404)
-    expect(body.success).toBe(false)
-    expect(body.error).toBe('Project not found')
-    expect(mockUpdate).not.toHaveBeenCalled()
+
+    expect(res.status).toBe(400)
   })
 
   it('rejects missing email', async () => {
-    const res = await app.request('/projects/my-app-abc123', {
-      method: 'DELETE',
+    const res = await app.request('/projects/delete-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectKey: 'my-app-abc123',
+      }),
+    })
+
+    expect(res.status).toBe(400)
+  })
+})
+
+describe('POST /projects/delete-confirm', () => {
+  beforeEach(() => {
+    mockTokenFindUnique.mockClear()
+    mockTransaction.mockClear()
+  })
+
+  it('soft deletes project with a valid token', async () => {
+    const res = await app.request('/projects/delete-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: 'a'.repeat(64),
+      }),
+    })
+
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(mockTransaction).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects invalid token', async () => {
+    mockTokenFindUnique.mockImplementationOnce(async () => null)
+
+    const res = await app.request('/projects/delete-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: 'a'.repeat(64),
+      }),
+    })
+
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.success).toBe(false)
+    expect(body.error).toBe('Invalid or expired deletion token')
+    expect(mockTransaction).not.toHaveBeenCalled()
+  })
+
+  it('rejects missing token', async () => {
+    const res = await app.request('/projects/delete-confirm', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
-    const body = await res.json()
-    expect(res.status).toBe(400)
-    expect(body.success).toBe(false)
-  })
 
-  it('is case insensitive on email', async () => {
-    const res = await app.request('/projects/my-app-abc123', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'FOUNDER@MYAPP.COM' }),
-    })
-    const body = await res.json()
-    expect(res.status).toBe(200)
-    expect(body.success).toBe(true)
+    expect(res.status).toBe(400)
   })
 })
