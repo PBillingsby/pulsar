@@ -1,11 +1,15 @@
 import type { RankedSignal, SignalInput } from './types'
 import type { CorrelatedSignal } from './correlate'
-import { detectRetentionRisk, detectPositiveTrend } from './detectors/retention'
-import { detectActivationFriction } from './detectors/friction'
-import { detectFunnelDrop } from './detectors/funnel'
-import { detectHighIntentNoConvert } from './detectors/intent'
-import { detectHiddenWinner } from './detectors/winner'
 import { correlateSignals } from './correlate'
+import {
+  detectRetentionRisk,
+  detectPositiveTrend,
+  detectActivationFriction,
+  detectFunnelDrop,
+  detectHighIntentNoConvert,
+  detectHiddenWinner,
+  detectMobileFriction
+} from './detectors'
 
 export type { RankedSignal, SignalType, Urgency, SignalInput } from './types'
 export type { CorrelatedSignal } from './correlate'
@@ -23,6 +27,7 @@ export function rankSignals(input: SignalInput): RankedSignalResult {
     detectActivationFriction(input),
     detectHighIntentNoConvert(input),
     detectHiddenWinner(input),
+    detectMobileFriction(input)
   ]
 
   const urgencyOrder: Record<string, number> = { critical: 0, monitor: 1, positive: 2 }
