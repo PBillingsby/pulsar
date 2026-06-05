@@ -1,14 +1,17 @@
 import { getOrCreateSessionId, isIgnored } from '@/lib/session/index'
 import { EventQueue } from '@/lib/queue/index'
 import { sendEvents } from '@/lib/queue/sender'
-import { listenForRouteChanges } from '@/lib/events/routes'
-import { listenForClicks } from '@/lib/events/clicks'
-import { listenForScrollDepth } from '@/lib/events/scroll'
-import { listenForSessionEvents } from '@/lib/events/session'
-import { listenForRageClicks } from '@/lib/events/rage-click'
-import { listenForFormSubmits } from '@/lib/events/form'
-import { listenForCopy } from '@/lib/events/copy'
-import { listenForDeadClicks } from './lib/events/dead-click'
+import {
+  listenForRouteChanges,
+  listenForClicks,
+  listenForScrollDepth,
+  listenForSessionEvents,
+  listenForRageClicks,
+  listenForFormSubmits,
+  listenForCopy,
+  listenForDeadClicks,
+} from '@/lib/events/index'
+import { getDeviceInfo } from '@/lib/session/device'
 import type { PulsarConfig, PulsarEvent } from '@/types/index'
 
 export function init(config: PulsarConfig): void {
@@ -49,6 +52,9 @@ export function init(config: PulsarConfig): void {
     referrer: document.referrer || undefined,
     timestamp: new Date().toISOString(),
     sessionStart,
+    metadata: {
+      ...getDeviceInfo(),
+    },
   }
   queue.enqueue(initialPageView)
 
