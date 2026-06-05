@@ -1,7 +1,7 @@
 import type { IncomingEvent } from '@/types/index'
 
 const VALID_TYPES: ReadonlySet<string> = new Set<IncomingEvent['type']>([
-  'page_view', 'click', 'rage_click', 'scroll_depth',
+  'page_view', 'click', 'dead_click', 'rage_click', 'scroll_depth',
   'session_end', 'form_submit', 'copy', 'tab_focus', 'tab_blur'
 ])
 
