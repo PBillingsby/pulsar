@@ -5,7 +5,6 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
   const since: Date = new Date()
   since.setDate(since.getDate() - 30)
 
-  // get all sessions with their page view counts and date range
   const sessionData = await prisma.event.groupBy({
     by: ['sessionId'],
     where: { projectKey, type: 'page_view', timestamp: { gte: since } },
@@ -38,9 +37,11 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       avgSessionDurationReturners: null,
       avgSessionDurationBouncers: null,
       rageClickPages: [],
+      deadClickPages: [],
       formSubmissionRate: null,
       highIntentPages: [],
       activationPageScrollDepth: null,
+      deviceBreakdown: null,
     }
   }
 
@@ -53,6 +54,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     formSubmitEvents,
     copyEvents,
     deadClickEvents,
+    firstPageViewEvents,
   ] = await Promise.all([
     // top pages for returners
     prisma.event.groupBy({
@@ -103,14 +105,6 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       orderBy: { _count: { url: 'desc' } },
       take: 5,
     }),
-    // page views to calculate form submission rate
-    prisma.event.groupBy({
-      by: ['url'],
-      where: { projectKey, type: 'page_view', timestamp: { gte: since } },
-      _count: { url: true },
-      orderBy: { _count: { url: 'desc' } },
-      take: 10,
-    }),
     // dead click events grouped by page
     prisma.event.groupBy({
       by: ['url'],
@@ -119,9 +113,16 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       orderBy: { _count: { url: 'desc' } },
       take: 5,
     }),
+    // first page_view per session for device detection
+    prisma.event.findMany({
+      where: { projectKey, type: 'page_view', timestamp: { gte: since } },
+      orderBy: { timestamp: 'asc' },
+      distinct: ['sessionId'],
+      select: { sessionId: true, metadata: true },
+    }),
   ])
 
-  // activation page — top returner page that bouncers don't visit
+  // activation page
   const bouncerTopUrl: string | null = bouncerPages[0]?.url ?? null
   const activationPage: string | null = returnerPages.find(
     (p) => p.url !== bouncerTopUrl
@@ -148,7 +149,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       .reduce((sum, s) => sum + (s._count.sessionId ?? 0), 0) / bouncerSessions.length
     : 0
 
-  // session duration from session_end events
+  // session durations
   const returnerDurations: number[] = sessionEndEvents
     .filter((e) => returnerSessions.includes(e.sessionId))
     .map((e) => {
@@ -179,6 +180,12 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     count: e._count.url,
   }))
 
+  // dead click pages
+  const deadClickPages = deadClickEvents.map((e) => ({
+    url: e.url,
+    count: e._count.url,
+  }))
+
   // form submission rate
   const formSubmitSessions: Set<string> = new Set(formSubmitEvents.map((e) => e.sessionId))
   const totalSessions: number = sessionData.length
@@ -196,12 +203,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
   let activationPageScrollDepth: number | null = null
   if (activationPage) {
     const scrollEvents = await prisma.event.findMany({
-      where: {
-        projectKey,
-        type: 'scroll_depth',
-        url: activationPage,
-        timestamp: { gte: since },
-      },
+      where: { projectKey, type: 'scroll_depth', url: activationPage, timestamp: { gte: since } },
       select: { metadata: true },
     })
 
@@ -217,10 +219,17 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       : null
   }
 
-  const deadClickPages = deadClickEvents.map((e) => ({
-    url: e.url,
-    count: e._count.url,
-  }))
+  // device breakdown from first page view per session
+  const deviceCounts = { mobile: 0, tablet: 0, desktop: 0 }
+  let hasDeviceData: boolean = false
+
+  for (const e of firstPageViewEvents) {
+    const meta = e.metadata as Record<string, unknown>
+    const deviceType = meta?.deviceType as string | undefined
+    if (deviceType === 'mobile') { deviceCounts.mobile++; hasDeviceData = true }
+    else if (deviceType === 'tablet') { deviceCounts.tablet++; hasDeviceData = true }
+    else if (deviceType === 'desktop') { deviceCounts.desktop++; hasDeviceData = true }
+  }
 
   return {
     returnerTopPage: returnerPages[0]?.url ?? null,
@@ -232,9 +241,10 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     avgSessionDurationReturners,
     avgSessionDurationBouncers,
     rageClickPages,
+    deadClickPages,
     formSubmissionRate,
     highIntentPages,
     activationPageScrollDepth,
-    deadClickPages
+    deviceBreakdown: hasDeviceData ? deviceCounts : null,
   }
 }
