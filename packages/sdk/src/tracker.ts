@@ -8,6 +8,7 @@ import { listenForSessionEvents } from '@/lib/events/session'
 import { listenForRageClicks } from '@/lib/events/rage-click'
 import { listenForFormSubmits } from '@/lib/events/form'
 import { listenForCopy } from '@/lib/events/copy'
+import { listenForDeadClicks } from './lib/events/dead-click'
 import type { PulsarConfig, PulsarEvent } from '@/types/index'
 
 export function init(config: PulsarConfig): void {
@@ -55,6 +56,7 @@ export function init(config: PulsarConfig): void {
 
   listenForRouteChanges(sessionId, projectKey, queue, debug, resetScroll)
   listenForClicks(sessionId, projectKey, queue, debug)
+  listenForDeadClicks(sessionId, projectKey, queue, debug)
   listenForSessionEvents(sessionId, projectKey, sessionStart, queue, debug)
   listenForRageClicks(sessionId, projectKey, queue, debug)
   listenForFormSubmits(sessionId, projectKey, queue, debug)
