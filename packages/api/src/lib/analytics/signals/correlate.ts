@@ -43,12 +43,18 @@ export function correlateSignals(
     (s: RankedSignal) => s.type === 'retention_risk'
   )
 
+  const deadClickSignal: RankedSignal | undefined = signals.find(
+    (s: RankedSignal) => s.type === 'dead_click_friction' &&
+      s.evidence.some((e: string) => e.includes(activationPath))
+  )
+
   // collect which signals are converging
   const converging: RankedSignal[] = [
     frictionOnActivation,
     funnelDrop,
     highIntentNoConvert,
     retentionRisk,
+    deadClickSignal
   ].filter((s): s is RankedSignal => s !== undefined)
 
   // only fire if 2 or more signals point at the same problem
@@ -79,8 +85,12 @@ export function correlateSignals(
     evidence.push(retentionRisk.evidence[0])
   }
 
+  if (deadClickSignal) {
+    evidence.push(deadClickSignal.evidence[0])
+  }
+
   // build headline based on which signals converged
-  const hasFriction: boolean = frictionOnActivation !== undefined
+  const hasFriction: boolean = frictionOnActivation !== undefined || deadClickSignal !== undefined
   const hasDrop: boolean = funnelDrop !== undefined
   const hasRetention: boolean = retentionRisk !== undefined
 
