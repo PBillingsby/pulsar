@@ -8,6 +8,7 @@ export interface PulsarConfig {
 export type PulsarEventType =
   | 'page_view'
   | 'click'
+  | 'dead_click'
   | 'rage_click'
   | 'scroll_depth'
   | 'session_end'
