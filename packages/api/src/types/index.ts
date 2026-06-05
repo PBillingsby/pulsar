@@ -125,6 +125,11 @@ export interface BehavioralPatterns {
   highIntentPages: { url: string; count: number }[]
   deadClickPages: { url: string; count: number }[]
   activationPageScrollDepth: number | null
+  deviceBreakdown: {
+    mobile: number
+    tablet: number
+    desktop: number
+  } | null
 }
 
 export interface DigestContext {
