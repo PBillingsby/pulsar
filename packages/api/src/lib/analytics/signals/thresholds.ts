@@ -27,4 +27,8 @@ export const THRESHOLDS = {
     minReturnMultiplier: 2.5, // returners visit page X at least 2.5x more than bouncers
     minReturnerVisits: 3,     // page must have at least 3 returner visits
   },
+  mobileFriction: {
+    minSessions: 10,       // minimum sessions with device data
+    minMobileRate: 0.4,    // at least 40% of sessions on mobile
+  },
 } as const
