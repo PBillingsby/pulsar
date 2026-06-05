@@ -1,5 +1,6 @@
 export type SignalType =
   | 'retention_risk'
+  | 'dead_click_friction'
   | 'positive_trend'
   | 'activation_friction'
   | 'funnel_drop'
