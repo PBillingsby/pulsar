@@ -3,6 +3,10 @@ export const THRESHOLDS = {
     comebackDropPts: 20,   // pts drop week over week to trigger
     minVisitors: 20,       // minimum visitors to avoid noise
   },
+  deadClickFriction: {
+    minCount: 8,        // lower than rage clicks — dead clicks are quieter signal
+    minRatePercent: 4,  // slightly lower threshold too
+  },
   positiveTrend: {
     comebackRisePts: 8,    // lower bar — founders like seeing wins
     minVisitors: 10,
