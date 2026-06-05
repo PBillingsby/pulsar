@@ -52,7 +52,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     rageClickEvents,
     formSubmitEvents,
     copyEvents,
-    pageViewsOnActivation,
+    deadClickEvents,
   ] = await Promise.all([
     // top pages for returners
     prisma.event.groupBy({
@@ -110,6 +110,14 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       _count: { url: true },
       orderBy: { _count: { url: 'desc' } },
       take: 10,
+    }),
+    // dead click events grouped by page
+    prisma.event.groupBy({
+      by: ['url'],
+      where: { projectKey, type: 'dead_click', timestamp: { gte: since } },
+      _count: { url: true },
+      orderBy: { _count: { url: 'desc' } },
+      take: 5,
     }),
   ])
 
@@ -209,6 +217,11 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       : null
   }
 
+  const deadClickPages = deadClickEvents.map((e) => ({
+    url: e.url,
+    count: e._count.url,
+  }))
+
   return {
     returnerTopPage: returnerPages[0]?.url ?? null,
     bouncerTopPage: bouncerTopUrl,
@@ -222,5 +235,6 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     formSubmissionRate,
     highIntentPages,
     activationPageScrollDepth,
+    deadClickPages
   }
 }
