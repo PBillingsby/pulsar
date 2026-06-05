@@ -1,5 +1,5 @@
 export interface IncomingEvent {
-  type: 'page_view' | 'click' | 'rage_click' | 'scroll_depth' | 'session_end' | 'form_submit' | 'copy' | 'tab_focus' | 'tab_blur'
+  type: 'page_view' | 'click' | 'dead_click' | 'rage_click' | 'scroll_depth' | 'session_end' | 'form_submit' | 'copy' | 'tab_focus' | 'tab_blur'
   sessionId: string
   projectKey: string
   url: string
@@ -123,6 +123,7 @@ export interface BehavioralPatterns {
   rageClickPages: { url: string; count: number }[]
   formSubmissionRate: number | null
   highIntentPages: { url: string; count: number }[]
+  deadClickPages: { url: string; count: number }[]
   activationPageScrollDepth: number | null
 }
 
