@@ -40,6 +40,7 @@ export function rankSignals(input: SignalInput): RankedSignalResult {
     })
 
   const correlated: CorrelatedSignal | null = correlateSignals(signals, input)
-
+  console.log('[Pulsar] ranked signals:', JSON.stringify(signals.map(s => s.type)))
+  console.log('[Pulsar] correlated:', correlated?.type ?? 'none')
   return { correlated, signals }
 }
