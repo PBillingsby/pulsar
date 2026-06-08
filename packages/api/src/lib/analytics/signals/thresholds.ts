@@ -31,4 +31,8 @@ export const THRESHOLDS = {
     minSessions: 10,       // minimum sessions with device data
     minMobileRate: 0.4,    // at least 40% of sessions on mobile
   },
+  referrerFriction: {
+    minSessions: 15,
+    minReferrerRate: 0.3, // referrer accounts for 30%+ of sessions
+  },
 } as const
