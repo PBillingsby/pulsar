@@ -1,7 +1,7 @@
 import { prisma } from '@/db/client'
 
 const snaps = await prisma.weeklySnapshot.findMany({
-  where: { projectKey: 'my-app-xgb9f8' },
+  where: { projectKey: 'testing-d2rl75' },
   orderBy: { weekStart: 'desc' },
 })
 

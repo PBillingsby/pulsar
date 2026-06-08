@@ -1,6 +1,6 @@
 import { prisma } from '@/db/client'
 
-const PROJECT_KEY: string = 'dropframe-qdkuz0'
+const PROJECT_KEY: string = 'testing-d2rl75'
 
 function randomDate(daysAgo: number, hourOffset: number = 10): Date {
   const date: Date = new Date()
