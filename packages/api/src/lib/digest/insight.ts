@@ -55,7 +55,11 @@ function buildInsightPayload(
       observationFacts.push(`Users who reach ${activationPath} are significantly more likely to return`)
     }
 
-    interpretationCandidates.push(`There may be friction on a page that plays an important role in activation`)
+    interpretationCandidates.push(
+      activationPath
+        ? `The combination of a comeback rate drop and rage clicks on ${activationPath} suggests this page may be a bottleneck in the activation flow`
+        : `There may be friction on a page that plays an important role in activation`
+    )
 
     const topContributor: RankedSignal | undefined = frictionSignal ?? retentionSignal ?? signals[0]
     return {
@@ -89,6 +93,7 @@ function buildInsightPayload(
         ? `Something shifted this week that appears to be driving more users back to the product`
         : top.headline
   )
+
   return {
     observationFacts,
     interpretationCandidates,
@@ -105,7 +110,9 @@ function buildPrompt(
   const { current, snapshots, patterns } = ctx
 
   const payload = buildInsightPayload(signals, correlated, patterns, current)
-
+  console.log('[Pulsar] observation facts:', payload.observationFacts)
+  console.log('[Pulsar] interpretation:', payload.interpretationCandidates)
+  console.log('[Pulsar] action:', payload.recommendedAction)
   return `You are a copywriter writing a 3-sentence product insight for an early-stage founder. You are not an analyst — the analysis is already done. Your only job is to rewrite the structured data below into clear, human sentences. Do not add new information. Do not connect facts that are not listed together.
  
 DATA VOLUME: ${payload.dataVolume}
