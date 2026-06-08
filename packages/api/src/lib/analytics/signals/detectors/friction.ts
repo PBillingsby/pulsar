@@ -43,6 +43,6 @@ export function detectActivationFriction(input: SignalInput): RankedSignal | nul
     urgency: 'critical',
     headline: `UI friction detected on ${toPath(triggering.url)}`,
     evidence,
-    recommendedAction: "Review session recordings on {page} to identify where repeated clicking is concentrated"
+    recommendedAction: `Review session recordings on ${toPath(triggering.url)} to identify where repeated clicking is concentrated`,
   }
 }
