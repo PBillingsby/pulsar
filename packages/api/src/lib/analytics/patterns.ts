@@ -42,6 +42,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       highIntentPages: [],
       activationPageScrollDepth: null,
       deviceBreakdown: null,
+      referrerBreakdown: null,
     }
   }
 
@@ -55,6 +56,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     copyEvents,
     deadClickEvents,
     firstPageViewEvents,
+    referrerEvents,
   ] = await Promise.all([
     // top pages for returners
     prisma.event.groupBy({
@@ -119,6 +121,13 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       orderBy: { timestamp: 'asc' },
       distinct: ['sessionId'],
       select: { sessionId: true, metadata: true },
+    }),
+    // first page_view per session for referrer
+    prisma.event.findMany({
+      where: { projectKey, type: 'page_view', timestamp: { gte: since } },
+      orderBy: { timestamp: 'asc' },
+      distinct: ['sessionId'],
+      select: { sessionId: true, referrer: true },
     }),
   ])
 
@@ -219,7 +228,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       : null
   }
 
-  // device breakdown from first page view per session
+  // device breakdown
   const deviceCounts = { mobile: 0, tablet: 0, desktop: 0 }
   let hasDeviceData: boolean = false
 
@@ -230,6 +239,23 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     else if (deviceType === 'tablet') { deviceCounts.tablet++; hasDeviceData = true }
     else if (deviceType === 'desktop') { deviceCounts.desktop++; hasDeviceData = true }
   }
+
+  // referrer breakdown
+  const referrerCounts: Record<string, number> = {}
+  for (const e of referrerEvents) {
+    if (!e.referrer) continue
+    try {
+      const source: string = new URL(e.referrer).hostname.replace('www.', '')
+      referrerCounts[source] = (referrerCounts[source] ?? 0) + 1
+    } catch {
+      continue
+    }
+  }
+
+  const referrerBreakdown = Object.entries(referrerCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([source, count]) => ({ source, count }))
 
   return {
     returnerTopPage: returnerPages[0]?.url ?? null,
@@ -246,5 +272,6 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     highIntentPages,
     activationPageScrollDepth,
     deviceBreakdown: hasDeviceData ? deviceCounts : null,
+    referrerBreakdown: referrerBreakdown.length > 0 ? referrerBreakdown : null,
   }
 }
