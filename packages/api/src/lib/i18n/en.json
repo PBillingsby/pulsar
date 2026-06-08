@@ -19,11 +19,19 @@
   "noOneReturned": "No one has returned yet.",
   "activationPageLabel": "Users who reach {path} are significantly more likely to return.",
   "topPageLabel": "Most visited: {path}.",
-  "trendUp": "+{diff}pts vs last week",
-  "trendDown": "{diff}pts vs last week",
+  "trendUp": "+{diff} pts vs last week",
+  "trendDown": "{diff} pts vs last week",
   "trendUnchanged": "unchanged vs last week",
   "digestSubject": "Pulsar Insight",
-  "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  "days": [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ],
   "unsubscribe": "Unsubscribe",
   "unsubscribeNote": "You'll stop receiving Pulsar digests for this project.",
   "welcome": {
