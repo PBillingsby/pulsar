@@ -7,6 +7,7 @@ export type SignalType =
   | 'high_intent_no_convert'
   | 'hidden_winner'
   | 'mobile_friction'
+  | 'referrer_friction'
 
 export type Urgency = 'critical' | 'monitor' | 'positive'
 
