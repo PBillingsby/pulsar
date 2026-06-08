@@ -124,6 +124,7 @@ export interface BehavioralPatterns {
   formSubmissionRate: number | null
   highIntentPages: { url: string; count: number }[]
   deadClickPages: { url: string; count: number }[]
+  referrerBreakdown: { source: string; count: number }[] | null
   activationPageScrollDepth: number | null
   deviceBreakdown: {
     mobile: number
