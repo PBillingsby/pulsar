@@ -6,9 +6,11 @@ import { sendWelcomeEmail } from '@/lib/email/welcome'
 import { sendDeleteProjectEmail } from '@/lib/email/delete-project'
 import {
   registerProjectSchema,
+  validateBetaCodeSchema,
   requestDeleteProjectSchema,
   confirmDeleteProjectSchema,
   type RegisterProjectInput,
+  type ValidateBetaCodeInput,
   type RequestDeleteProjectInput,
   type ConfirmDeleteProjectInput,
 } from '@/lib/validate/schemas'
@@ -65,8 +67,59 @@ function toProjectResponse(project: {
   }
 }
 
+// validate beta code — called by landing page before showing registration form
+projectsRouter.post(
+  '/validate-code',
+  zValidator('json', validateBetaCodeSchema),
+  async (c) => {
+    const { code }: ValidateBetaCodeInput = c.req.valid('json')
+
+    const betaCode = await prisma.betaCode.findUnique({
+      where: { code: code.trim().toUpperCase() },
+    })
+
+    if (!betaCode || !betaCode.active) {
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Invalid or inactive beta code',
+      }, 400)
+    }
+
+    if (betaCode.usedCount >= betaCode.maxUses) {
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'This beta code has reached its maximum uses',
+      }, 400)
+    }
+
+    return c.json<ApiResponse<{ valid: boolean }>>({
+      success: true,
+      data: { valid: true },
+    })
+  }
+)
+
 projectsRouter.post('/register', zValidator('json', registerProjectSchema), async (c) => {
   const body: RegisterProjectInput = c.req.valid('json')
+
+  // validate beta code
+  const betaCode = await prisma.betaCode.findUnique({
+    where: { code: body.betaCode.trim().toUpperCase() },
+  })
+
+  if (!betaCode || !betaCode.active) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'Invalid or inactive beta code',
+    }, 400)
+  }
+
+  if (betaCode.usedCount >= betaCode.maxUses) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'This beta code has reached its maximum uses',
+    }, 400)
+  }
 
   let domain: string | null = null
 
@@ -81,10 +134,7 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
     }
 
     const existing = await prisma.project.findFirst({
-      where: {
-        domain,
-        deletedAt: null,
-      },
+      where: { domain, deletedAt: null },
     })
 
     if (existing) {
@@ -97,18 +147,25 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
 
   const projectKey: string = generateProjectKey(body.name.trim())
 
-  const project = await prisma.project.create({
-    data: {
-      projectKey,
-      name: body.name.trim(),
-      email: body.email.trim().toLowerCase(),
-      domain,
-      beta: true,
-      language: body.language ?? 'English',
-      digestDay: body.digestDay ?? 1,
-      digestHour: body.digestHour ?? 8,
-    },
-  })
+  const [project] = await prisma.$transaction([
+    prisma.project.create({
+      data: {
+        projectKey,
+        name: body.name.trim(),
+        email: body.email.trim().toLowerCase(),
+        domain,
+        beta: true,
+        language: body.language ?? 'English',
+        digestDay: body.digestDay ?? 1,
+        digestHour: body.digestHour ?? 8,
+        betaCode: body.betaCode.trim().toUpperCase(),
+      },
+    }),
+    prisma.betaCode.update({
+      where: { code: body.betaCode.trim().toUpperCase() },
+      data: { usedCount: { increment: 1 } },
+    }),
+  ])
 
   const response: ProjectResponse = toProjectResponse(project)
 
@@ -127,14 +184,9 @@ projectsRouter.post(
     const email: string = body.email.trim().toLowerCase()
 
     const project = await prisma.project.findFirst({
-      where: {
-        projectKey: body.projectKey,
-        email,
-        deletedAt: null,
-      },
+      where: { projectKey: body.projectKey, email, deletedAt: null },
     })
 
-    // Do not leak whether the project/email combo exists.
     if (!project) {
       return c.json<ApiResponse<null>>({ success: true, data: null })
     }
@@ -204,10 +256,7 @@ projectsRouter.get('/:projectKey', async (c) => {
   const projectKey: string = c.req.param('projectKey')
 
   const project = await prisma.project.findFirst({
-    where: {
-      projectKey,
-      deletedAt: null,
-    },
+    where: { projectKey, deletedAt: null },
   })
 
   if (!project) {
