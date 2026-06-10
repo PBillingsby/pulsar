@@ -10,10 +10,25 @@ function getPreviousSnapshot(snapshots: WeeklySnapshot[]): WeeklySnapshot | unde
   return snapshots.find((s: WeeklySnapshot, i: number) => i > 0 && s.comebackRate !== null)
 }
 
+
+
 export function detectRetentionRisk(input: SignalInput): RankedSignal | null {
   const { current, patterns, snapshots } = input
+
   if (current.totalVisitors < THRESHOLDS.retentionRisk.minVisitors) return null
   if (current.comebackRate === null) return null
+
+  // if completed snapshots show an improving trend, suppress retention_risk
+  // the current week drop may be noise against a recovering baseline
+  const completedSnapshots: WeeklySnapshot[] = snapshots
+    .filter((s: WeeklySnapshot) => s.comebackRate !== null)
+    .slice(0, 3)
+
+  if (completedSnapshots.length >= 2) {
+    const isImproving: boolean =
+      (completedSnapshots[0].comebackRate as number) > (completedSnapshots[1].comebackRate as number)
+    if (isImproving) return null
+  }
 
   const previous: WeeklySnapshot | undefined = getPreviousSnapshot(snapshots)
   if (previous?.comebackRate == null) return null
@@ -37,7 +52,7 @@ export function detectRetentionRisk(input: SignalInput): RankedSignal | null {
     urgency: 'critical',
     headline: `Comeback rate dropped ${drop}pts this week`,
     evidence,
-    recommendedAction: "Compare this week's sessions to last week and look for what changed in the onboarding or activation flow"
+    recommendedAction: "Compare this week's sessions to last week and look for what changed in the onboarding or activation flow",
   }
 }
 
