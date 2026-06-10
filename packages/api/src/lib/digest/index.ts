@@ -23,6 +23,9 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     prisma.project.findUnique({ where: { projectKey }, select: { language: true, email: true } }),
   ])
 
+  console.log('[debug] totalVisitors:', current.totalVisitors)
+  console.log('[debug] snapshots:', snapshots.length)
+
   const language = project?.language ?? 'English'
   const s = getStrings(language)
   const ctx: DigestContext = { current, snapshots, patterns, language }
