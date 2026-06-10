@@ -2,8 +2,10 @@ import { describe, it, expect, mock, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
 import { projectsRouter } from '@/routes/projects'
 
+const VALID_BETA_CODE = 'PULSAR-BETA-001'
+
 const mockCreate = mock(async (args: { data: { projectKey: string; name: string; email: string; beta: boolean } }) => ({
-  projectKey: args.data.projectKey,
+  projectKey: args.data.projectKey,  // this is already correct
   name: args.data.name,
   email: args.data.email,
   domain: null,
@@ -12,6 +14,7 @@ const mockCreate = mock(async (args: { data: { projectKey: string; name: string;
   digestDay: 1,
   digestHour: 8,
   createdAt: new Date('2026-01-01'),
+  betaCode: VALID_BETA_CODE,
 }))
 
 const mockFindUnique = mock(async () => ({
@@ -24,6 +27,7 @@ const mockFindUnique = mock(async () => ({
   digestDay: 1,
   digestHour: 8,
   createdAt: new Date('2026-01-01'),
+  code: VALID_BETA_CODE,
 }))
 
 const mockFindFirst = mock(async () => ({
@@ -37,15 +41,38 @@ const mockFindFirst = mock(async () => ({
   digestHour: 8,
   createdAt: new Date('2026-01-01'),
   deletedAt: null,
+  code: VALID_BETA_CODE,
 }))
 
 const mockUpdate = mock(async () => ({
   projectKey: 'my-app-abc123',
   deletedAt: new Date(),
+  code: VALID_BETA_CODE,
+}))
+
+const mockBetaCodeFindUnique = mock(async () => ({
+  id: 'beta-code-id',
+  code: VALID_BETA_CODE,
+  description: 'Test beta code',
+  usedCount: 0,
+  maxUses: 10,
+  active: true,
+  createdAt: new Date('2026-01-01'),
+}))
+
+const mockBetaCodeUpdate = mock(async () => ({
+  id: 'beta-code-id',
+  code: VALID_BETA_CODE,
+  description: 'Test beta code',
+  usedCount: 1,
+  maxUses: 10,
+  active: true,
+  createdAt: new Date('2026-01-01'),
 }))
 
 const mockTokenCreate = mock(async () => ({
   token: 'a'.repeat(64),
+  code: VALID_BETA_CODE,
 }))
 
 const mockTokenFindUnique = mock(async () => ({
@@ -54,14 +81,16 @@ const mockTokenFindUnique = mock(async () => ({
   email: 'founder@myapp.com',
   expiresAt: new Date(Date.now() + 60_000),
   usedAt: null,
+  code: VALID_BETA_CODE,
 }))
 
 const mockTokenUpdate = mock(async () => ({
   token: 'a'.repeat(64),
   usedAt: new Date(),
+  code: VALID_BETA_CODE,
 }))
 
-const mockTransaction = mock(async () => [])
+const mockTransaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops))
 
 mock.module('@/db/client', () => ({
   prisma: {
@@ -70,6 +99,10 @@ mock.module('@/db/client', () => ({
       findUnique: mockFindUnique,
       findFirst: mockFindFirst,
       update: mockUpdate,
+    },
+    betaCode: {
+      findUnique: mockBetaCodeFindUnique,
+      update: mockBetaCodeUpdate,
     },
     projectDeletionToken: {
       create: mockTokenCreate,
@@ -88,15 +121,23 @@ describe('POST /projects/register', () => {
     mockCreate.mockClear()
     mockFindUnique.mockClear()
     mockUpdate.mockClear()
+    mockBetaCodeFindUnique.mockClear()
+    mockBetaCodeUpdate.mockClear()
+    mockTransaction.mockClear()
   })
 
   it('registers a project with valid input', async () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'My App', email: 'founder@myapp.com' }),
+      body: JSON.stringify({
+        name: 'My App',
+        email: 'founder@myapp.com',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
     const body = await res.json()
+
     expect(res.status).toBe(201)
     expect(body.success).toBe(true)
     expect(body.data.name).toBe('My App')
@@ -110,9 +151,13 @@ describe('POST /projects/register', () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'founder@myapp.com' }),
+      body: JSON.stringify({
+        email: 'founder@myapp.com',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
     const body = await res.json()
+
     expect(res.status).toBe(400)
     expect(body.success).toBe(false)
   })
@@ -121,7 +166,10 @@ describe('POST /projects/register', () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'My App' }),
+      body: JSON.stringify({
+        name: 'My App',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
 
     const body = await res.json()
@@ -133,7 +181,11 @@ describe('POST /projects/register', () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'My App', email: 'notanemail' }),
+      body: JSON.stringify({
+        name: 'My App',
+        email: 'notanemail',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
 
     const body = await res.json()
@@ -145,9 +197,14 @@ describe('POST /projects/register', () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'My Cool App', email: 'founder@myapp.com' }),
+      body: JSON.stringify({
+        name: 'My Cool App',
+        email: 'founder@myapp.com',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
     const body = await res.json()
+
     expect(body.data.projectKey).toMatch(/^my-cool-app-/)
   })
 
@@ -155,9 +212,14 @@ describe('POST /projects/register', () => {
     const res = await app.request('/projects/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'My App', email: 'Founder@MyApp.com' }),
+      body: JSON.stringify({
+        name: 'My App',
+        email: 'Founder@MyApp.com',
+        betaCode: VALID_BETA_CODE,
+      }),
     })
     const body = await res.json()
+
     expect(body.data.email).toBe('founder@myapp.com')
   })
 })
@@ -166,6 +228,7 @@ describe('GET /projects/:projectKey', () => {
   it('returns a project by key', async () => {
     const res = await app.request('/projects/my-app-abc123')
     const body = await res.json()
+
     expect(res.status).toBe(200)
     expect(body.success).toBe(true)
     expect(body.data.projectKey).toBe('my-app-abc123')
