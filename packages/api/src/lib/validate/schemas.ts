@@ -4,6 +4,7 @@ export const eventSchema = z.object({
   type: z.enum([
     'page_view',
     'click',
+    'dead_click',
     'rage_click',
     'scroll_depth',
     'session_end',
@@ -41,6 +42,11 @@ export const registerProjectSchema = z.object({
   ]).optional().default('English'),
   digestDay: z.number().int().min(0).max(6).optional().default(1),
   digestHour: z.number().int().min(0).max(23).optional().default(8),
+  betaCode: z.string().min(1).max(50),
+})
+
+export const validateBetaCodeSchema = z.object({
+  code: z.string().min(1).max(50),
 })
 
 export const requestDeleteProjectSchema = z.object({
@@ -58,13 +64,7 @@ export const digestTriggerSchema = z.object({
 
 export type IngestInput = z.infer<typeof ingestSchema>
 export type RegisterProjectInput = z.infer<typeof registerProjectSchema>
-
-export type RequestDeleteProjectInput = z.infer<
-  typeof requestDeleteProjectSchema
->
-
-export type ConfirmDeleteProjectInput = z.infer<
-  typeof confirmDeleteProjectSchema
->
-
+export type ValidateBetaCodeInput = z.infer<typeof validateBetaCodeSchema>
+export type RequestDeleteProjectInput = z.infer<typeof requestDeleteProjectSchema>
+export type ConfirmDeleteProjectInput = z.infer<typeof confirmDeleteProjectSchema>
 export type DigestTriggerInput = z.infer<typeof digestTriggerSchema>
