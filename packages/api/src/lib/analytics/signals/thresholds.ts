@@ -35,4 +35,14 @@ export const THRESHOLDS = {
     minSessions: 15,
     minReferrerRate: 0.3, // referrer accounts for 30%+ of sessions
   },
+  decliningRetention: {
+    minWeeks: 3,
+    minConsecutiveDeclines: 2,
+    minTotalDrop: 10,
+  },
+  activationDecay: {
+    minWeeks: 3,
+    minConsecutiveDeclines: 2,
+    minTotalDrop: 8,
+  },
 } as const
