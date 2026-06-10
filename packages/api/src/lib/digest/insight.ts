@@ -81,6 +81,18 @@ function buildInsightPayload(
     }
   }
 
+  // trend signals lead with full weekly evidence, not current week stats
+  if (top.type === 'declining_retention' || top.type === 'activation_decay') {
+    observationFacts.push(...top.evidence.slice(0, 3))
+    interpretationCandidates.push(top.headline)
+    return {
+      observationFacts,
+      interpretationCandidates,
+      recommendedAction: top.recommendedAction,
+      dataVolume,
+    }
+  }
+
   observationFacts.push(...top.evidence.slice(0, 2))
   if (activationPath) {
     observationFacts.push(`Users who reach ${activationPath} are significantly more likely to return`)
@@ -136,6 +148,7 @@ HARD RULES:
 - Do not connect facts that are not explicitly paired
 - Never claim causation
 - Never use: strongly, clearly, definitely, proof, crashed, surged
+- Never remove spaces around em dashes
 - Never say "right where it matters most", "most critical", "before it even has a chance"
 - Refer to pages by path only, never full URLs
 - Do not repeat the page name more than twice across all three sentences
