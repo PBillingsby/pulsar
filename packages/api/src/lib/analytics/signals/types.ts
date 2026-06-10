@@ -8,11 +8,13 @@ export type SignalType =
   | 'hidden_winner'
   | 'mobile_friction'
   | 'referrer_friction'
+  | 'declining_retention'
+  | 'activation_decay'
 
 export type Urgency = 'critical' | 'monitor' | 'positive'
 
 export interface RankedSignal {
-  priority: 1 | 2 | 3
+  priority: 0 | 1 | 2 | 3
   type: SignalType
   urgency: Urgency
   headline: string
