@@ -8,6 +8,13 @@ import type { DigestData } from '@/types/index'
 const MAX_ATTEMPTS: number = 3
 const RETRY_DELAYS_MS: number[] = [5000, 15000, 45000]
 
+// retention windows by plan
+const RETENTION_DAYS: Record<string, number> = {
+  free: 7,
+  beta: 30,
+  pro: 30,
+}
+
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -52,22 +59,36 @@ async function processProject(project: {
 }): Promise<void> {
   try {
     await captureWeeklySnapshot(project.projectKey)
+
+    // idempotency check — skip if already sent this week
+    const snapshot = await prisma.weeklySnapshot.findFirst({
+      where: { projectKey: project.projectKey },
+      orderBy: { weekStart: 'desc' },
+    })
+
+    if (snapshot?.digestSentAt) {
+      console.log(`[Pulsar] Already sent digest for ${project.projectKey} this week — skipping`)
+      return
+    }
+
     const digest: DigestData = await buildDigest(project.projectKey)
     await sendWithRetry(project.projectKey, project.email, project.language, digest)
+
+    // mark as sent
+    if (snapshot) {
+      await prisma.weeklySnapshot.update({
+        where: { id: snapshot.id },
+        data: { digestSentAt: new Date() },
+      })
+    }
+
     await cleanupOldSnapshots(project.projectKey)
     console.log(`[Pulsar] Sent to ${project.email} for ${project.projectKey}`)
   } catch (err: unknown) {
     const reason: string = err instanceof Error ? err.message : String(err)
     console.error(`[Pulsar] Failed to process ${project.projectKey}:`, reason)
-
     await prisma.digestFailure.create({
-      data: {
-        projectKey: project.projectKey,
-        email: project.email,
-        reason,
-        attempts: 1,
-        resolved: false,
-      },
+      data: { projectKey: project.projectKey, email: project.email, reason, attempts: 1, resolved: false },
     })
   }
 }
@@ -82,9 +103,9 @@ async function runScheduledDigests(force: boolean = false): Promise<void> {
 
   const projects = await prisma.project.findMany({
     where: {
+      deletedAt: null,
       beta: true,
-      digestHour: currentHour,
-      digestDay: currentDay,
+      ...(force ? {} : { digestHour: currentHour, digestDay: currentDay }),
     },
     select: {
       projectKey: true,
@@ -96,18 +117,51 @@ async function runScheduledDigests(force: boolean = false): Promise<void> {
   if (projects.length === 0) return
 
   console.log(`[Pulsar] ${projects.length} digest(s) due at ${currentHour}:00 UTC`)
-
-  // process concurrently — each fires independently, no batch delay needed
   await Promise.allSettled(projects.map(processProject))
-
   console.log(`[Pulsar] Done processing ${projects.length} digest(s)`)
 }
 
+async function runCleanup(): Promise<void> {
+  const projects = await prisma.project.findMany({
+    where: { deletedAt: null },
+    select: { projectKey: true, plan: true },
+  })
+
+  let totalDeleted: number = 0
+
+  for (const project of projects) {
+    const retentionDays: number = RETENTION_DAYS[project.plan] ?? RETENTION_DAYS.free
+    const cutoff: Date = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
+
+    const result = await prisma.event.deleteMany({
+      where: {
+        projectKey: project.projectKey,
+        timestamp: { lt: cutoff },
+      },
+    })
+
+    if (result.count > 0) {
+      totalDeleted += result.count
+      console.log(`[Pulsar] Cleaned ${result.count} events for ${project.projectKey} (plan: ${project.plan}, cutoff: ${retentionDays}d)`)
+    }
+  }
+
+  if (totalDeleted > 0) {
+    console.log(`[Pulsar] Cleanup complete — ${totalDeleted} events deleted`)
+  }
+}
+
 export function startScheduler(): void {
-  // runs every minute, checks who is due
+  // digest cron — runs every minute, checks who is due
   cron.schedule('* * * * *', () => {
     runScheduledDigests().catch(console.error)
   })
+
+  // cleanup cron — runs every Sunday at 3am UTC
+  cron.schedule('0 3 * * 0', () => {
+    runCleanup().catch(console.error)
+  })
+
   console.log('[Pulsar] Scheduler started — checking for due digests every minute')
 }
 
