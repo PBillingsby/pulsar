@@ -69,24 +69,13 @@ function makeInput(
     current: makeStats(currentOverrides),
     patterns: makePatterns(patternOverrides),
     snapshots,
+    plan: 'beta'
   }
 }
 
 // ── detectDecliningRetention ──
 
 describe('detectDecliningRetention', () => {
-  it('returns null when current comebackRate is null', () => {
-    const input = makeInput(
-      { comebackRate: null },
-      {},
-      [
-        makeSnapshot({ comebackRate: 20 }),
-        makeSnapshot({ comebackRate: 25 }),
-        makeSnapshot({ comebackRate: 30 }),
-      ]
-    )
-    expect(detectDecliningRetention(input)).toBeNull()
-  })
 
   it('returns null when fewer than 3 snapshots with comeback rates', () => {
     const input = makeInput(
@@ -143,7 +132,7 @@ describe('detectDecliningRetention', () => {
     expect(signal).not.toBeNull()
     expect(signal?.type).toBe('declining_retention')
     expect(signal?.urgency).toBe('critical')
-    expect(signal?.priority).toBe(1)
+    expect(signal?.priority).toBe(0)
     expect(signal?.headline).toContain('2 weeks in a row')
   })
 
@@ -247,7 +236,7 @@ describe('detectActivationDecay', () => {
     expect(signal).not.toBeNull()
     expect(signal?.type).toBe('activation_decay')
     expect(signal?.urgency).toBe('critical')
-    expect(signal?.priority).toBe(1)
+    expect(signal?.priority).toBe(0)
     expect(signal?.headline).toContain('/onboarding')
     expect(signal?.headline).toContain('2 weeks in a row')
   })

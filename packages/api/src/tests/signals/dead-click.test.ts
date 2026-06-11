@@ -44,6 +44,7 @@ function makeInput(
     current: makeStats(currentOverrides),
     patterns: makePatterns(patternOverrides),
     snapshots,
+    plan: 'beta'
   }
 }
 
