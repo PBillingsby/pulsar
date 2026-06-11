@@ -240,6 +240,7 @@ export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
     current: ctx.current,
     patterns: ctx.patterns,
     snapshots: ctx.snapshots,
+    plan: ctx.plan,
   })
 
   try {
