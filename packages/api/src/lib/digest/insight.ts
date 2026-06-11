@@ -83,12 +83,35 @@ function buildInsightPayload(
 
   // trend signals lead with full weekly evidence, not current week stats
   if (top.type === 'declining_retention' || top.type === 'activation_decay') {
-    observationFacts.push(...top.evidence.slice(0, 3))
-    interpretationCandidates.push(top.headline)
+    observationFacts.push(...top.evidence)
+
+    const frictionSignal: RankedSignal | undefined = signals.find(
+      (s: RankedSignal) => s.type === 'activation_friction' || s.type === 'dead_click_friction'
+    )
+    if (frictionSignal) {
+      observationFacts.push(frictionSignal.evidence[0])
+    }
+
+    const hasCounterSignal: boolean = top.evidence.some(
+      (e: string) => e.toLowerCase().includes('comeback rate improved')
+    )
+
+    interpretationCandidates.push(
+      hasCounterSignal && top.type === 'activation_decay'
+        ? `The problem appears to be getting users to activation rather than retaining them — users who activate are increasingly likely to return`
+        : top.type === 'declining_retention'
+          ? `A multi-week decline suggests this is a pattern, not a one-off fluctuation — something may have changed in the product or traffic that is systematically reducing return visits`
+          : `A consistent week-over-week drop suggests more users are dropping off before reaching activation`)
+
+    const trendActivationPath: string | null = top.type === 'activation_decay'
+      ? toPath(top.headline.match(/\/[a-z0-9\-\/]+/)?.[0] ?? '')
+      : activationPath
     return {
       observationFacts,
       interpretationCandidates,
-      recommendedAction: top.recommendedAction,
+      recommendedAction: trendActivationPath
+        ? `Investigate changes in the funnel leading to ${trendActivationPath}`
+        : top.recommendedAction,
       dataVolume,
     }
   }
@@ -125,39 +148,43 @@ function buildPrompt(
   console.log('[Pulsar] observation facts:', payload.observationFacts)
   console.log('[Pulsar] interpretation:', payload.interpretationCandidates)
   console.log('[Pulsar] action:', payload.recommendedAction)
-  return `You are a copywriter writing a 3-sentence product insight for an early-stage founder. You are not an analyst — the analysis is already done. Your only job is to rewrite the structured data below into clear, human sentences. Do not add new information. Do not connect facts that are not listed together.
- 
+  return `You are a copywriter writing a short product insight for an early-stage founder.
+
+The analysis has already been completed. Do not perform analysis. Your only job is to rewrite the information below into natural language.
+
 DATA VOLUME: ${payload.dataVolume}
- 
-OBSERVATION FACTS (use these in sentence 1):
+
+OBSERVATION FACTS:
 ${payload.observationFacts.map((f: string) => `- ${f}`).join('\n')}
- 
-INTERPRETATION CANDIDATES (choose the most grounded one for sentence 2):
+
+INTERPRETATION CANDIDATES:
 ${payload.interpretationCandidates.map((c: string) => `- ${c}`).join('\n')}
- 
-RECOMMENDED ACTION (use this exactly in sentence 3):
+
+RECOMMENDED ACTION:
 ${payload.recommendedAction}
- 
-Write exactly 3 sentences:
-- Sentence 1: State the observation facts. Plain, factual, no interpretation.
-- Sentence 2: State the single most grounded interpretation candidate. Use "suggests", "appears", or "may indicate". Do not go beyond what the facts show.
-- Sentence 3: Use the recommended action exactly as written. You may rephrase slightly for flow but do not change the meaning.
- 
+
+Use:
+
+* The first observation fact as sentence 1
+* The first interpretation candidate as sentence 2
+* The recommended action as sentence 3
+
+Write exactly 3 sentences.
+
 HARD RULES:
-- Do not add information not listed above
-- Do not connect facts that are not explicitly paired
-- Never claim causation
-- Never use: strongly, clearly, definitely, proof, crashed, surged
-- Never remove spaces around em dashes
-- Never say "right where it matters most", "most critical", "before it even has a chance"
-- Refer to pages by path only, never full URLs
-- Do not repeat the page name more than twice across all three sentences
-- No bullet points, markdown, or headers
-- Do not start with "Based on", "Looking at", or "Your data shows"
-- Sentence 1 must state ONE observation only — the most important signal fact. Do not list multiple signals.
-- Sentence 3 must be a direct instruction. Never use "would be", "it's worth", or "a useful next step".
-- Write in ${ctx.language}. Use natural phrasing — do not translate idioms literally.
-`
+
+* Do not add information
+* Do not combine multiple observations
+* Do not select a different interpretation
+* Do not infer new relationships
+* Do not claim causation
+* Never concatenate words — always include a space between every word
+* Use exact numbers when available
+* Refer to pages by path only
+* No bullet points, markdown, or headings
+* Write in ${ctx.language}
+* Output only the final 3-sentence insight
+  `
 }
 
 
