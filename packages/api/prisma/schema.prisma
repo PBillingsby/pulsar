@@ -78,6 +78,7 @@ model WeeklySnapshot {
   comebackRate        Float?
   topPage             String?
   totalEvents         Int
+  digestSentAt DateTime?
 
   // behavioral pattern fields
   activationPage      String?
