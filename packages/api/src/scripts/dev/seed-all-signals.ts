@@ -1,7 +1,7 @@
 import { prisma } from '@/db/client'
 
 // Use a dedicated test project — run bun run src/scripts/dev/seed-all-signals.ts
-const PROJECT_KEY: string = 'trend-test-mixed-w1x5s9'
+const PROJECT_KEY: string = 'trend-test-activatio-xmq8i3'
 
 function randomDate(daysAgo: number, hourOffset: number = 10): Date {
   const date: Date = new Date()
