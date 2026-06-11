@@ -20,7 +20,7 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
     getStats(projectKey),
     getRecentSnapshots(projectKey),
     detectPatterns(projectKey),
-    prisma.project.findUnique({ where: { projectKey }, select: { language: true, email: true } }),
+    prisma.project.findUnique({ where: { projectKey }, select: { language: true, email: true, plan: true } }),
   ])
 
   console.log('[debug] totalVisitors:', current.totalVisitors)
@@ -28,7 +28,7 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
 
   const language = project?.language ?? 'English'
   const s = getStrings(language)
-  const ctx: DigestContext = { current, snapshots, patterns, language }
+  const ctx: DigestContext = { current, snapshots, patterns, language, plan: project?.plan ?? 'free' }
   const insight: string = await generateLLMInsight(ctx)
 
   const returning: number = Math.round(
