@@ -20,6 +20,8 @@ export interface RankedSignalResult {
 }
 
 export function rankSignals(input: SignalInput): RankedSignalResult {
+  const isBetaOrPro: boolean = input.plan === 'beta' || input.plan === 'pro'
+
   const results: (RankedSignal | null)[] = [
     detectRetentionRisk(input),
     detectPositiveTrend(input),
@@ -30,8 +32,10 @@ export function rankSignals(input: SignalInput): RankedSignalResult {
     detectHiddenWinner(input),
     detectMobileFriction(input),
     detectReferrerFriction(input),
-    detectDecliningRetention(input),
-    detectActivationDecay(input),
+    ...(isBetaOrPro ? [
+      detectDecliningRetention(input),
+      detectActivationDecay(input),
+    ] : []),
   ]
 
   const urgencyOrder: Record<string, number> = { critical: 0, monitor: 1, positive: 2 }
