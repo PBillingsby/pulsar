@@ -138,4 +138,5 @@ export interface DigestContext {
   snapshots: WeeklySnapshot[]
   patterns: BehavioralPatterns
   language: string
+  plan: string
 }
