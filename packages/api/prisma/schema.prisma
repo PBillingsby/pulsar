@@ -56,6 +56,20 @@ model Project {
   @@index([digestDay, digestHour])
 }
 
+model ProjectAlert {
+  id          String    @id @default(cuid())
+  projectKey  String
+  type        String
+  message     String
+  windowStart DateTime
+  windowEnd   DateTime
+  sentAt      DateTime  @default(now())
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([projectKey, type, sentAt])
+}
+
 model ProjectDeletionToken {
   id         String    @id @default(cuid())
   token      String    @unique
