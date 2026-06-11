@@ -26,4 +26,5 @@ export interface SignalInput {
   patterns: import('@/types/index').BehavioralPatterns
   current: import('@/types/index').PulsarStats
   snapshots: import('@/types/index').WeeklySnapshot[]
+  plan: string
 }
