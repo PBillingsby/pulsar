@@ -62,5 +62,22 @@
     "warning": "This will immediately stop event ingestion and future Pulses for this project.",
     "ignore": "If you did not request this, you can ignore this email.",
     "footerNote": "This confirmation link expires in 24 hours."
+  },
+  "anomalies": {
+    "anomalySubject": "Pulsar alert: {{label}} on {{page}}",
+    "anomalySubjectNoPage": "Pulsar alert: {{label}}",
+    "anomalyHeadline": "{{label}} crossed your alert threshold.",
+    "anomalyBody": "{{label}} is now {{current}}, compared with {{baseline}} in the last completed week.",
+    "anomalyAction": "Recommended action",
+    "anomalyAlertLabel": "Alert",
+    "anomalySignalDetected": "Signal Detected",
+    "rageClickSpike": "Rage click rate",
+    "deadClickSpike": "Dead click rate",
+    "activationDrop": "Activation reach",
+    "comebackDrop": "Comeback rate",
+    "rageClickAction": "Review recent sessions on {{page}} to identify what users are hitting.",
+    "deadClickAction": "Inspect {{page}} for unresponsive elements.",
+    "activationDropAction": "Investigate what changed in the funnel leading to {{page}}.",
+    "comebackDropAction": "Review what changed this week in your onboarding or activation flow."
   }
 }

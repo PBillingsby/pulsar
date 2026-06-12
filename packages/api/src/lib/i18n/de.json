@@ -23,7 +23,15 @@
   "trendDown": "{diff} Pkt. gegenüber letzter Woche",
   "trendUnchanged": "unverändert gegenüber letzter Woche",
   "digestSubject": "Pulsar Insight",
-  "days": ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+  "days": [
+    "Sonntag",
+    "Montag",
+    "Dienstag",
+    "Mittwoch",
+    "Donnerstag",
+    "Freitag",
+    "Samstag"
+  ],
   "unsubscribe": "Abmelden",
   "unsubscribeNote": "Sie erhalten keine Pulsar-Digests mehr für dieses Projekt.",
   "welcome": {
@@ -54,5 +62,22 @@
     "warning": "Dadurch werden die Ereigniserfassung und zukünftige Pulses für dieses Projekt sofort gestoppt.",
     "ignore": "Falls Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.",
     "footerNote": "Dieser Bestätigungslink läuft in 24 Stunden ab."
+  },
+  "anomalies": {
+    "anomalySubject": "Pulsar-Warnung: {{label}} auf {{page}}",
+    "anomalySubjectNoPage": "Pulsar-Warnung: {{label}}",
+    "anomalyHeadline": "{{label}} hat den festgelegten Schwellenwert überschritten.",
+    "anomalyBody": "{{label}} liegt jetzt bei {{current}}, verglichen mit {{baseline}} in der letzten abgeschlossenen Woche.",
+    "anomalyAction": "Empfohlene Maßnahme",
+    "anomalyAlertLabel": "Warnung",
+    "anomalySignalDetected": "Signal erkannt",
+    "rageClickSpike": "Rage Click Rate",
+    "deadClickSpike": "Dead Click Rate",
+    "activationDrop": "Aktivierungsrate",
+    "comebackDrop": "Rückkehrrate",
+    "rageClickAction": "Überprüfen Sie die letzten Sitzungen auf {{page}}, um zu sehen, worauf Nutzer wiederholt klicken.",
+    "deadClickAction": "Untersuchen Sie {{page}} auf nicht reagierende Elemente.",
+    "activationDropAction": "Prüfen Sie, was sich im Funnel vor {{page}} verändert hat.",
+    "comebackDropAction": "Überprüfen Sie Änderungen am Onboarding- oder Aktivierungsprozess dieser Woche."
   }
 }

@@ -23,7 +23,15 @@
   "trendDown": "{diff} puan geçen haftaya göre",
   "trendUnchanged": "geçen haftaya göre değişmedi",
   "digestSubject": "Pulsar Insight",
-  "days": ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"],
+  "days": [
+    "Pazar",
+    "Pazartesi",
+    "Salı",
+    "Çarşamba",
+    "Perşembe",
+    "Cuma",
+    "Cumartesi"
+  ],
   "unsubscribe": "Abonelikten çık",
   "unsubscribeNote": "Bu proje için artık Pulsar özetlerini almayacaksınız.",
   "welcome": {
@@ -54,5 +62,22 @@
     "warning": "Bu işlem, bu proje için olay toplamayı ve gelecekteki Pulses gönderimlerini hemen durduracaktır.",
     "ignore": "Bu talebi siz oluşturmadıysanız bu e-postayı yok sayabilirsiniz.",
     "footerNote": "Bu onay bağlantısının süresi 24 saat içinde dolacaktır."
+  },
+  "anomalies": {
+    "anomalySubject": "Pulsar Uyarısı: {{page}} sayfasında {{label}}",
+    "anomalySubjectNoPage": "Pulsar Uyarısı: {{label}}",
+    "anomalyHeadline": "{{label}} yapılandırılmış eşiği aştı.",
+    "anomalyBody": "{{label}} şu anda {{current}} seviyesinde, geçen tamamlanmış haftadaki {{baseline}} değeriyle karşılaştırıldığında.",
+    "anomalyAction": "Önerilen işlem",
+    "anomalyAlertLabel": "Uyarı",
+    "anomalySignalDetected": "Sinyal tespit edildi",
+    "rageClickSpike": "Rage Click Rate",
+    "deadClickSpike": "Dead Click Rate",
+    "activationDrop": "Aktivasyon oranı",
+    "comebackDrop": "Geri dönüş oranı",
+    "rageClickAction": "Kullanıcıların tekrar tekrar tıkladığı noktaları belirlemek için {{page}} üzerindeki son oturumları inceleyin.",
+    "deadClickAction": "{{page}} üzerinde yanıt vermeyen öğeleri kontrol edin.",
+    "activationDropAction": "{{page}} sayfasına giden dönüşüm hunisinde nelerin değiştiğini araştırın.",
+    "comebackDropAction": "Bu hafta onboarding veya aktivasyon sürecinizde nelerin değiştiğini gözden geçirin."
   }
 }

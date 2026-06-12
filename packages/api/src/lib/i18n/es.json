@@ -23,7 +23,15 @@
   "trendDown": "{diff} pts frente a la semana pasada",
   "trendUnchanged": "sin cambios respecto a la semana pasada",
   "digestSubject": "Pulsar Insight",
-  "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+  "days": [
+    "Domingo",
+    "Lunes",
+    "Martes",
+    "Miércoles",
+    "Jueves",
+    "Viernes",
+    "Sábado"
+  ],
   "unsubscribe": "Darse de baja",
   "unsubscribeNote": "Dejarás de recibir los resúmenes de Pulsar para este proyecto.",
   "welcome": {
@@ -54,5 +62,22 @@
     "warning": "Esto detendrá inmediatamente la recopilación de eventos y futuros Pulses para este proyecto.",
     "ignore": "Si no solicitaste esta acción, puedes ignorar este correo.",
     "footerNote": "Este enlace de confirmación caduca en 24 horas."
+  },
+  "anomalies": {
+    "anomalySubject": "Alerta de Pulsar: {{label}} en {{page}}",
+    "anomalySubjectNoPage": "Alerta de Pulsar: {{label}}",
+    "anomalyHeadline": "{{label}} superó el umbral configurado.",
+    "anomalyBody": "{{label}} ahora es {{current}}, en comparación con {{baseline}} durante la última semana completa.",
+    "anomalyAction": "Acción recomendada",
+    "anomalyAlertLabel": "Alerta",
+    "anomalySignalDetected": "Señal detectada",
+    "rageClickSpike": "Rage Click Rate",
+    "deadClickSpike": "Dead Click Rate",
+    "activationDrop": "Tasa de activación",
+    "comebackDrop": "Tasa de retorno",
+    "rageClickAction": "Revisa las sesiones recientes en {{page}} para identificar dónde hacen clic repetidamente los usuarios.",
+    "deadClickAction": "Inspecciona {{page}} en busca de elementos que no respondan.",
+    "activationDropAction": "Investiga qué cambió en el embudo que conduce a {{page}}.",
+    "comebackDropAction": "Revisa qué cambió esta semana en tu proceso de onboarding o activación."
   }
 }

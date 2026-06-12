@@ -23,7 +23,15 @@
   "trendDown": "先週比 {diff}pt",
   "trendUnchanged": "先週から変化なし",
   "digestSubject": "Pulsar Insight",
-  "days": ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
+  "days": [
+    "日曜日",
+    "月曜日",
+    "火曜日",
+    "水曜日",
+    "木曜日",
+    "金曜日",
+    "土曜日"
+  ],
   "unsubscribe": "配信停止",
   "unsubscribeNote": "このプロジェクトのPulsarダイジェストは今後配信されなくなります。",
   "welcome": {
@@ -54,5 +62,22 @@
     "warning": "この操作により、このプロジェクトのイベント収集と今後のPulses配信が直ちに停止されます。",
     "ignore": "このリクエストに心当たりがない場合は、このメールを無視してください。",
     "footerNote": "この確認リンクの有効期限は24時間です。"
+  },
+  "anomalies": {
+    "anomalySubject": "Pulsarアラート: {{page}} の {{label}}",
+    "anomalySubjectNoPage": "Pulsarアラート: {{label}}",
+    "anomalyHeadline": "{{label}} が設定したしきい値を超えました。",
+    "anomalyBody": "{{label}} は現在 {{current}} で、前週の {{baseline}} と比較して変化しています。",
+    "anomalyAction": "推奨アクション",
+    "anomalyAlertLabel": "アラート",
+    "anomalySignalDetected": "シグナルを検出",
+    "rageClickSpike": "Rage Click Rate",
+    "deadClickSpike": "Dead Click Rate",
+    "activationDrop": "アクティベーション率",
+    "comebackDrop": "再訪率",
+    "rageClickAction": "{{page}} の最近のセッションを確認し、ユーザーが繰り返しクリックしている箇所を特定してください。",
+    "deadClickAction": "{{page}} に反応しない要素がないか確認してください。",
+    "activationDropAction": "{{page}} に至るファネルで何が変わったか調査してください。",
+    "comebackDropAction": "今週のオンボーディングまたはアクティベーションフローに変更がなかったか確認してください。"
   }
 }

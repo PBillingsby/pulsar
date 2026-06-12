@@ -54,5 +54,22 @@
     "warning": "此操作将立即停止该项目的事件采集以及后续 Pulses 发送。",
     "ignore": "如果您没有发起此请求，请忽略此邮件。",
     "footerNote": "此确认链接将在 24 小时后失效。"
+  },
+  "anomalies": {
+    "anomalySubject": "Pulsar 警报：{{page}} 上的 {{label}}",
+    "anomalySubjectNoPage": "Pulsar 警报：{{label}}",
+    "anomalyHeadline": "{{label}} 已超过设定阈值。",
+    "anomalyBody": "{{label}} 当前为 {{current}}，相比上一完整周的 {{baseline}} 已发生变化。",
+    "anomalyAction": "建议操作",
+    "anomalyAlertLabel": "警报",
+    "anomalySignalDetected": "检测到信号",
+    "rageClickSpike": "Rage Click Rate",
+    "deadClickSpike": "Dead Click Rate",
+    "activationDrop": "激活率",
+    "comebackDrop": "回访率",
+    "rageClickAction": "查看 {{page}} 的最近会话，找出用户反复点击的位置。",
+    "deadClickAction": "检查 {{page}} 是否存在无响应的元素。",
+    "activationDropAction": "调查通往 {{page}} 的转化漏斗中发生了哪些变化。",
+    "comebackDropAction": "检查本周的 onboarding 或激活流程是否发生了变化。"
   }
 }
