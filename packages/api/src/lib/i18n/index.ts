@@ -1,10 +1,10 @@
+import de from './de.json'
 import en from './en.json'
-import pt from './pt.json'
 import es from './es.json'
 import fr from './fr.json'
-import de from './de.json'
-import tr from './tr.json'
 import ja from './ja.json'
+import pt from './pt.json'
+import tr from './tr.json'
 import zh from './zh.json'
 
 export type Locale = typeof en
