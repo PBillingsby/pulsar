@@ -3,7 +3,12 @@ import { prisma } from '@/db/client'
 import { buildDigest } from '@/lib/digest/index'
 import { sendDigest } from '@/lib/email/index'
 import { captureWeeklySnapshot, cleanupOldSnapshots } from '@/lib/analytics/snapshots'
+import { runAnomalyCheck } from './anomaly'
 import type { DigestData } from '@/types/index'
+
+cron.schedule('0 */6 * * *', () => {
+  runAnomalyCheck().catch(console.error)
+})
 
 const MAX_ATTEMPTS: number = 3
 const RETRY_DELAYS_MS: number[] = [5000, 15000, 45000]
