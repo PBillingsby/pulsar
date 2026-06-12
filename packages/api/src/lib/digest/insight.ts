@@ -1,8 +1,8 @@
-import Anthropic from '@anthropic-ai/sdk'
-import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
+import type { CorrelatedSignal } from '@/lib/analytics/signals/correlate'
 import { rankSignals } from '@/lib/analytics/signals/index'
 import type { RankedSignal } from '@/lib/analytics/signals/types'
-import type { CorrelatedSignal } from '@/lib/analytics/signals/correlate'
+import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
+import Anthropic from '@anthropic-ai/sdk'
 
 const client: Anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -178,6 +178,7 @@ HARD RULES:
 * Do not select a different interpretation
 * Do not infer new relationships
 * Do not claim causation
+* Do not repeat the same page path more than once across all three sentences — after the first mention, use "this page" or "it" instead
 * Never concatenate words — always include a space between every word
 * Use exact numbers when available
 * Refer to pages by path only
