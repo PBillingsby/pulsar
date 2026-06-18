@@ -1,6 +1,6 @@
-import { Resend } from 'resend'
+import { formatHour, getDay, getStrings, Locale, LOCALE_MAP, t } from '@/lib/i18n/index'
 import type { ProjectResponse } from '@/types/index'
-import { getStrings, t, getDay, formatHour, LOCALE_MAP, Locale } from '@/lib/i18n/index'
+import { Resend } from 'resend'
 
 const resend: Resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -75,7 +75,7 @@ function renderWelcomeEmail(project: ProjectResponse): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:12px 16px;">
-                    <p style="margin:0;font-family:'Courier New',monospace;font-size:13px;color:#22C55E;">npm install pulsar-sdk</p>
+                    <p style="margin:0;font-family:'Courier New',monospace;font-size:13px;color:#22C55E;">npm install pulsardev</p>
                   </td>
                 </tr>
               </table>
@@ -96,7 +96,7 @@ function renderWelcomeEmail(project: ProjectResponse): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:14px 16px;">
-                    <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#aaaaaa;line-height:1.8;">import { Pulsar } from 'pulsar-sdk'<br/><br/>Pulsar.init({<br/>&nbsp;&nbsp;projectKey: '<span style="color:#22C55E;">${project.projectKey}</span>'<br/>})</p>
+                    <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#aaaaaa;line-height:1.8;">import { Pulsar } from 'pulsardev'<br/><br/>Pulsar.init({<br/>&nbsp;&nbsp;projectKey: '<span style="color:#22C55E;">${project.projectKey}</span>'<br/>})</p>
                   </td>
                 </tr>
               </table>
