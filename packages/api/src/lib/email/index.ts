@@ -95,7 +95,11 @@ function renderEmail(digest: DigestData, language: string): string {
   const s = getStrings(language)
   const locale: string = LOCALE_MAP[language] ?? 'en-US'
 
-  const comebackDisplay: string = digest.comebackRate !== null ? `${digest.comebackRate}%` : '—'
+  const comebackDisplay: string = digest.comebackRate !== null
+    ? `${digest.comebackRate}%`
+    : digest.totalVisitors > 0
+      ? 'Collecting data'
+      : 'No data yet'
   const trendValue: number | null = digest.comebackTrend ? parseInt(digest.comebackTrend) : null
 
   const trendBg: string = trendValue === null ? '#27272a'
