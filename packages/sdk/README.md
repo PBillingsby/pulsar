@@ -1,35 +1,59 @@
-# pulsar-sdk
+# pulsardev
 
-Autocapture analytics SDK for early stage products.
+Know if your product is working. Before you need a data team.
+
+Pulsar watches your users and delivers a plain-English weekly analysis to your inbox every Monday — comeback rate, activation patterns, friction signals, and what to investigate next. No dashboards. No setup. No data team.
 
 ## Install
 
 ```bash
-npm install pulsar-sdk
+npm install pulsardev
 ```
 
 ## Usage
 
 ```typescript
-import { Pulsar } from 'pulsar-sdk'
+import { Pulsar } from "pulsardev";
 
 Pulsar.init({
-  projectKey: 'your-project-key',
-  debug: true // remove in production
-})
+  projectKey: "your-project-key",
+});
 ```
 
-That's it. Pulsar automatically captures:
-
-- Page views
-- Clicks with element labels
-- SPA route changes
-- Session data
+Add this to your app's entry point. Pulsar autocaptures page views, clicks, scroll depth, rage clicks, form submissions, session duration, and tab focus — automatically filtered for signal.
 
 ## Options
 
-| Option | Type | Required | Default |
-|--------|------|----------|---------|
-| projectKey | string | yes | — |
-| debug | boolean | no | false |
-| endpoint | string | no | https://api.pulsar.dev/events |
+```typescript
+Pulsar.init({
+  projectKey: "your-project-key", // required
+  debug: true, // log events to console
+  ignoreMe: true, // exclude your own device from tracking
+});
+```
+
+## Get a project key
+
+During beta, reach out directly to get your project key and start receiving your weekly Pulse.
+
+## What gets tracked
+
+- Page views and SPA navigation
+- Clicks on labeled elements
+- Scroll depth milestones (25%, 50%, 75%, 100%)
+- Rage clicks — repeated frustrated clicks on the same element
+- Form submissions
+- Session duration
+- Tab focus and blur
+
+## What gets filtered
+
+- Localhost and internal IP traffic
+- Bot sessions
+- Bounces under 5 seconds
+- Unlabeled noise clicks
+- Your own visits when `ignoreMe: true`
+
+## License
+
+MIT
