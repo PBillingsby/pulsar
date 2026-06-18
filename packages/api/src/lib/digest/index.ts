@@ -3,8 +3,8 @@ import { getStats } from '@/lib/analytics/index'
 import { detectPatterns } from '@/lib/analytics/patterns'
 import { getRecentSnapshots } from '@/lib/analytics/snapshots'
 import { generateLLMInsight } from '@/lib/digest/insight'
-import type { DigestData, DigestContext, WeeklySnapshot } from '@/types/index'
-import { getStrings, t, LOCALE_MAP } from '@/lib/i18n/index'
+import { getStrings, LOCALE_MAP, t } from '@/lib/i18n/index'
+import type { DigestContext, DigestData, WeeklySnapshot } from '@/types/index'
 
 function getPathFromUrl(url: string): string {
   try {
@@ -41,18 +41,22 @@ export async function buildDigest(projectKey: string): Promise<DigestData> {
   const keyPagePath: string = keyPageUrl ? getPathFromUrl(keyPageUrl) : ''
   const isActivationPage: boolean = activationUrl !== null
 
+  // @TODO - Add english strings to locale files
   const lines: string[] = []
   if (current.totalVisitors === 0) {
-    lines.push(s.noVisitors)
+    lines.push('No visitors yet.')
   } else {
-    const visitorWord = current.totalVisitors === 1 ? s.visitorSingular : s.visitorPlural
-    lines.push(`${current.totalVisitors} ${visitorWord} ${s.inTheLast7Days}`)
-    lines.push(returning > 0 ? `${returning} ${s.cameBack}` : s.noOneReturned)
+    lines.push(`${current.totalVisitors} ${current.totalVisitors === 1 ? 'visitor' : 'visitors'} in the last 7 days.`)
+    if (returning > 0) {
+      lines.push(`${returning} came back.`)
+    } else {
+      lines.push('No one has returned yet — keep driving traffic.')
+    }
     if (keyPagePath) {
-      lines.push(isActivationPage
-        ? t(s.activationPageLabel, { path: keyPagePath })
-        : t(s.topPageLabel, { path: keyPagePath })
-      )
+      const pageLabel: string = isActivationPage
+        ? `Users who reach ${keyPagePath} are significantly more likely to return.`
+        : `Most visited: ${keyPagePath}.`
+      lines.push(pageLabel)
     }
   }
 
