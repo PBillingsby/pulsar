@@ -172,14 +172,13 @@ Use:
 Write exactly 3 sentences.
 
 HARD RULES:
-
+* Write in a professional, neutral tone — avoid casual language, colloquialisms, and informal phrasing
 * Do not add information
 * Do not combine multiple observations
 * Do not select a different interpretation
 * Do not infer new relationships
 * Do not claim causation
 * Do not repeat the same page path more than once across all three sentences — after the first mention, use "this page" or "it" instead
-* Never concatenate words — always include a space between every word
 * Use exact numbers when available
 * Refer to pages by path only
 * No bullet points, markdown, or headings
@@ -187,7 +186,6 @@ HARD RULES:
 * Output only the final 3-sentence insight
   `
 }
-
 
 function generateRuleBasedInsight(
   ctx: DigestContext,
