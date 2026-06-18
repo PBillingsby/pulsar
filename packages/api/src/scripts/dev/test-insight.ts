@@ -1,8 +1,8 @@
 import { getStats } from '@/lib/analytics/index'
 import { detectPatterns } from '@/lib/analytics/patterns'
-import { getRecentSnapshots, captureWeeklySnapshot } from '@/lib/analytics/snapshots'
+import { captureWeeklySnapshot, getRecentSnapshots } from '@/lib/analytics/snapshots'
 import { generateLLMInsight } from '@/lib/digest/insight'
-import type { DigestContext, PulsarStats, WeeklySnapshot, BehavioralPatterns } from '@/types/index'
+import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
 
 const projectKey: string = 'my-app-xgb9f8'
 
@@ -18,5 +18,6 @@ console.log('Current comeback rate:', current.comebackRate)
 console.log('Patterns:', JSON.stringify(patterns, null, 2))
 
 const ctx: DigestContext = { current, snapshots, patterns }
+
 const insight: string = await generateLLMInsight(ctx)
 console.log('\nInsight:', insight)
