@@ -1,10 +1,10 @@
-import cron from 'node-cron'
 import { prisma } from '@/db/client'
+import { captureWeeklySnapshot, cleanupOldSnapshots } from '@/lib/analytics/snapshots'
 import { buildDigest } from '@/lib/digest/index'
 import { sendDigest } from '@/lib/email/index'
-import { captureWeeklySnapshot, cleanupOldSnapshots } from '@/lib/analytics/snapshots'
-import { runAnomalyCheck } from './anomaly'
 import type { DigestData } from '@/types/index'
+import cron from 'node-cron'
+import { runAnomalyCheck } from './anomaly'
 
 cron.schedule('0 */6 * * *', () => {
   runAnomalyCheck().catch(console.error)
@@ -77,6 +77,12 @@ async function processProject(project: {
     }
 
     const digest: DigestData = await buildDigest(project.projectKey)
+
+    if (digest.totalVisitors < 3) {
+      console.log(`[Pulsar] Skipping ${project.projectKey} — insufficient data (${digest.totalVisitors} visitors)`)
+      return
+    }
+
     await sendWithRetry(project.projectKey, project.email, project.language, digest)
 
     // mark as sent
