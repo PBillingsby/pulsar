@@ -2,7 +2,7 @@
 
 Know if your product is working. Before you need a data team.
 
-Pulsar watches your users and delivers a plain-English weekly analysis to your inbox every Monday — comeback rate, activation patterns, friction signals, and what to investigate next. No dashboards. No setup. No data team.
+Pulsar watches your users and delivers a plain-English weekly analysis to your inbox — comeback rate, activation patterns, friction signals, and what to investigate next. No dashboards. No setup. No data team.
 
 ## Install
 
