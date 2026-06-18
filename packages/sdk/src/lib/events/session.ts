@@ -1,5 +1,5 @@
-import type { PulsarEvent } from '@/types/index'
 import { EventQueue } from '@/lib/queue/index'
+import type { PulsarEvent } from '@/types/index'
 
 export function listenForSessionEvents(
   sessionId: string,
@@ -36,8 +36,7 @@ export function listenForSessionEvents(
     if (debug) console.log(`[Pulsar] session_end — ${durationSeconds}s (${reason})`)
 
     // use sendBeacon for reliability on page unload
-    const endpoint: string = (window as Window & { __pulsarEndpoint?: string }).__pulsarEndpoint
-      ?? 'https://api.pulsar.dev/events'
+    const endpoint: string = (window as Window & { __pulsarEndpoint?: string }).__pulsarEndpoint ?? 'https://api.pulsar.dev/events'
 
     const payload: string = JSON.stringify({ events: [event] })
     if (navigator.sendBeacon) {
