@@ -1,20 +1,20 @@
-import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
-import crypto from 'node:crypto'
 import { prisma } from '@/db/client'
-import { sendWelcomeEmail } from '@/lib/email/welcome'
 import { sendDeleteProjectEmail } from '@/lib/email/delete-project'
+import { sendWelcomeEmail } from '@/lib/email/welcome'
 import {
-  registerProjectSchema,
-  validateBetaCodeSchema,
-  requestDeleteProjectSchema,
   confirmDeleteProjectSchema,
-  type RegisterProjectInput,
-  type ValidateBetaCodeInput,
-  type RequestDeleteProjectInput,
+  registerProjectSchema,
+  requestDeleteProjectSchema,
+  validateBetaCodeSchema,
   type ConfirmDeleteProjectInput,
+  type RegisterProjectInput,
+  type RequestDeleteProjectInput,
+  type ValidateBetaCodeInput,
 } from '@/lib/validate/schemas'
 import type { ApiResponse, ProjectResponse } from '@/types/index'
+import { zValidator } from '@hono/zod-validator'
+import { Hono } from 'hono'
+import crypto from 'node:crypto'
 
 export const projectsRouter = new Hono()
 
@@ -251,20 +251,3 @@ projectsRouter.post(
     return c.json<ApiResponse<null>>({ success: true, data: null })
   }
 )
-
-projectsRouter.get('/:projectKey', async (c) => {
-  const projectKey: string = c.req.param('projectKey')
-
-  const project = await prisma.project.findFirst({
-    where: { projectKey, deletedAt: null },
-  })
-
-  if (!project) {
-    return c.json<ApiResponse<null>>({ success: false, error: 'Project not found' }, 404)
-  }
-
-  return c.json<ApiResponse<ProjectResponse>>({
-    success: true,
-    data: toProjectResponse(project),
-  })
-})
