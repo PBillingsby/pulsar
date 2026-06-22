@@ -93,10 +93,21 @@ function renderWelcomeEmail(project: ProjectResponse): string {
             <td style="border-left:3px solid #22C55E;padding-left:16px;">
               <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#22C55E;text-transform:uppercase;letter-spacing:0.1em;">${w.stepInit}</p>
               <p style="margin:0 0 10px;font-size:14px;color:#555555;">${w.stepInitBody}</p>
+
+              <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#888;">Vanilla JS / other frameworks</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background:#111111;border-radius:8px;padding:14px 16px;">
                     <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#aaaaaa;line-height:1.8;">import { Pulsar } from 'pulsardev'<br/><br/>Pulsar.init({<br/>&nbsp;&nbsp;projectKey: '<span style="color:#22C55E;">${project.projectKey}</span>'<br/>})</p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:14px 0 6px;font-size:11px;font-weight:700;color:#888;">Next.js (App Router)</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:#111111;border-radius:8px;padding:14px 16px;">
+                    <p style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#aaaaaa;line-height:1.8;">'use client'<br/>import { Pulsar } from 'pulsardev'<br/><br/>export default function PulsarProvider() {<br/>&nbsp;&nbsp;Pulsar.init({ projectKey: '<span style="color:#22C55E;">${project.projectKey}</span>' })<br/>&nbsp;&nbsp;return null<br/>}<br/><br/>// then mount it in app/layout.tsx inside &lt;body&gt;</p>
                   </td>
                 </tr>
               </table>
