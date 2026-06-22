@@ -24,7 +24,7 @@ describe('listenForSessionEvents', () => {
       return []
     }
 
-    queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
     listenForSessionEvents('test-session', 'test-key', new Date().toISOString(), queue, false)
   })
 

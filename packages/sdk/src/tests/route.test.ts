@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
-import { Window } from 'happy-dom'
-import type { PulsarEvent } from '@/types/index'
-import { EventQueue } from '@/lib/queue'
 import { listenForRouteChanges } from '@/lib/events/routes'
+import { EventQueue } from '@/lib/queue'
+import type { PulsarEvent } from '@/types/index'
+import { beforeEach, describe, expect, it } from 'bun:test'
+import { Window } from 'happy-dom'
 
 describe('listenForRouteChanges', () => {
   let happyWindow: Window
@@ -37,7 +37,7 @@ describe('listenForRouteChanges', () => {
       return []
     }
 
-    queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
     listenForRouteChanges('test-session', 'test-key', queue, false)
   })
 

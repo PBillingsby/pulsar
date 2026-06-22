@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'bun:test'
 import { EventQueue } from '@/lib/queue'
 import type { PulsarEvent } from '@/types/index'
+import { describe, expect, it } from 'bun:test'
 
 const mockEvent: PulsarEvent = {
   type: 'page_view',
@@ -12,7 +12,7 @@ const mockEvent: PulsarEvent = {
 
 describe('EventQueue', () => {
   it('enqueues events', () => {
-    const queue = new EventQueue('https://api.pulsar.dev/events', false)
+    const queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false)
     queue.enqueue(mockEvent)
     expect(queue.size()).toBe(1)
   })
@@ -25,7 +25,7 @@ describe('EventQueue', () => {
       return []
     }
 
-    const queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    const queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
 
     for (let i = 0; i < 20; i++) {
       queue.enqueue(mockEvent)
@@ -41,7 +41,7 @@ describe('EventQueue', () => {
       return []
     }
 
-    const queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    const queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
     queue.enqueue(mockEvent)
     await queue.flush()
     expect(queue.size()).toBe(0)
@@ -52,7 +52,7 @@ describe('EventQueue', () => {
       return events
     }
 
-    const queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    const queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
     queue.enqueue(mockEvent)
     await queue.flush()
     expect(queue.size()).toBe(1)

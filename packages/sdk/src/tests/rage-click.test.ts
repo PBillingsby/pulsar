@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
-import { Window } from 'happy-dom'
-import type { PulsarEvent } from '@/types/index'
-import { EventQueue } from '@/lib/queue/index'
 import { listenForRageClicks } from '@/lib/events/rage-click'
+import { EventQueue } from '@/lib/queue/index'
+import type { PulsarEvent } from '@/types/index'
+import { beforeEach, describe, expect, it } from 'bun:test'
+import { Window } from 'happy-dom'
 
 const happyWindow = new Window({ url: 'https://example.com' })
 globalThis.localStorage = happyWindow.localStorage as unknown as Storage
@@ -24,7 +24,7 @@ describe('listenForRageClicks', () => {
       return []
     }
 
-    queue = new EventQueue('https://api.pulsar.dev/events', false, mockSender)
+    queue = new EventQueue('https://pulsar-api-production-0bc2.up.railway.app/events', false, mockSender)
     listenForRageClicks('test-session', 'test-key', queue, false)
   })
 

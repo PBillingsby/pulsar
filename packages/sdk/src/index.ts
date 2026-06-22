@@ -6,3 +6,11 @@ export const Pulsar = {
     init(config)
   }
 }
+
+// React/Next.js provider
+export function PulsarProvider(config: PulsarConfig): null {
+  if (typeof window !== 'undefined') {
+    init(config)
+  }
+  return null
+}

@@ -36,7 +36,7 @@ export function listenForSessionEvents(
     if (debug) console.log(`[Pulsar] session_end — ${durationSeconds}s (${reason})`)
 
     // use sendBeacon for reliability on page unload
-    const endpoint: string = (window as Window & { __pulsarEndpoint?: string }).__pulsarEndpoint ?? 'https://api.pulsar.dev/events'
+    const endpoint: string = (window as Window & { __pulsarEndpoint?: string }).__pulsarEndpoint ?? 'https://pulsar-api-production-0bc2.up.railway.app/events'
 
     const payload: string = JSON.stringify({ events: [event] })
     if (navigator.sendBeacon) {

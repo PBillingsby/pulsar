@@ -1,23 +1,23 @@
-import { getOrCreateSessionId, isIgnored } from '@/lib/session/index'
-import { EventQueue } from '@/lib/queue/index'
-import { sendEvents } from '@/lib/queue/sender'
 import {
-  listenForRouteChanges,
   listenForClicks,
-  listenForScrollDepth,
-  listenForSessionEvents,
-  listenForRageClicks,
-  listenForFormSubmits,
   listenForCopy,
   listenForDeadClicks,
+  listenForFormSubmits,
+  listenForRageClicks,
+  listenForRouteChanges,
+  listenForScrollDepth,
+  listenForSessionEvents,
 } from '@/lib/events/index'
+import { EventQueue } from '@/lib/queue/index'
+import { sendEvents } from '@/lib/queue/sender'
 import { getDeviceInfo } from '@/lib/session/device'
+import { getOrCreateSessionId, isIgnored } from '@/lib/session/index'
 import type { PulsarConfig, PulsarEvent } from '@/types/index'
 
 export function init(config: PulsarConfig): void {
   const {
     projectKey,
-    endpoint = 'https://api.pulsar.dev/events',
+    endpoint = 'https://pulsar-api-production-0bc2.up.railway.app/events',
     debug = false,
     ignoreMe = false,
   } = config
