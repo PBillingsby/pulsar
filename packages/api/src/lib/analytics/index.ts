@@ -1,26 +1,29 @@
 import { prisma } from '@/db/client'
-import type { PulsarStats, TopPage, RecentSession } from '@/types/index'
+import type { PulsarStats, RecentSession, TopPage } from '@/types/index'
 
 export async function getStats(projectKey: string): Promise<PulsarStats> {
+  const sevenDaysAgo: Date = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
   const [totalPageViews, uniqueSessions, topPages, sessionData] = await Promise.all([
     prisma.event.count({
-      where: { projectKey, type: 'page_view' },
+      where: { projectKey, type: 'page_view', timestamp: { gte: sevenDaysAgo } },
     }),
     prisma.event.findMany({
-      where: { projectKey },
+      where: { projectKey, timestamp: { gte: sevenDaysAgo } },
       select: { sessionId: true },
       distinct: ['sessionId'],
     }),
     prisma.event.groupBy({
       by: ['url'],
-      where: { projectKey, type: 'page_view' },
+      where: { projectKey, type: 'page_view', timestamp: { gte: sevenDaysAgo } },
       _count: { url: true },
       orderBy: { _count: { url: 'desc' } },
       take: 5,
     }),
     prisma.event.groupBy({
       by: ['sessionId'],
-      where: { projectKey, type: 'page_view' },
+      where: { projectKey, type: 'page_view', timestamp: { gte: sevenDaysAgo } },
       _count: { sessionId: true },
       _min: { timestamp: true },
       _max: { timestamp: true },

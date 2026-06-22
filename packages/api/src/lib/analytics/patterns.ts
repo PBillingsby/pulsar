@@ -3,7 +3,7 @@ import type { BehavioralPatterns } from '@/types/index'
 
 export async function detectPatterns(projectKey: string): Promise<BehavioralPatterns> {
   const since: Date = new Date()
-  since.setDate(since.getDate() - 30)
+  since.setDate(since.getDate() - 7)
 
   const sessionData = await prisma.event.groupBy({
     by: ['sessionId'],
