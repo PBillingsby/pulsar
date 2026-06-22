@@ -1,6 +1,6 @@
 {
   "name": "pulsardev",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Know if your product is working. Before you need a data team.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

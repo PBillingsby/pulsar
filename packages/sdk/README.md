@@ -4,13 +4,9 @@ Know if your product is working. Before you need a data team.
 
 Pulsar watches your users and delivers a plain-English weekly analysis to your inbox — comeback rate, activation patterns, friction signals, and what to investigate next. No dashboards. No setup. No data team.
 
-## Install
-
-```bash
-npm install pulsardev
-```
-
 ## Usage
+
+### Vanilla JS / other frameworks
 
 ```typescript
 import { Pulsar } from "pulsardev";
@@ -18,6 +14,31 @@ import { Pulsar } from "pulsardev";
 Pulsar.init({
   projectKey: "your-project-key",
 });
+```
+
+### Next.js (App Router)
+
+Create `components/PulsarProvider.tsx`:
+
+```typescript
+"use client";
+import { Pulsar } from "pulsardev";
+
+export default function PulsarProvider() {
+  Pulsar.init({ projectKey: "your-project-key" });
+  return null;
+}
+```
+
+Mount it once in `app/layout.tsx`:
+
+```typescript
+import PulsarProvider from '@/components/PulsarProvider'
+
+<body>
+  <PulsarProvider />
+  {children}
+</body>
 ```
 
 Add this to your app's entry point. Pulsar autocaptures page views, clicks, scroll depth, rage clicks, form submissions, session duration, and tab focus — automatically filtered for signal.
