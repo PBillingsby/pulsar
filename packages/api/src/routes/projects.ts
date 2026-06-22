@@ -121,6 +121,13 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
     }, 400)
   }
 
+  if (!body.termsAccepted) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'You must accept the Terms and Privacy Policy.',
+    }, 400)
+  }
+
   let domain: string | null = null
 
   if (body.domain) {
@@ -159,6 +166,7 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
         digestDay: body.digestDay ?? 1,
         digestHour: body.digestHour ?? 8,
         betaCode: body.betaCode.trim().toUpperCase(),
+        termsAcceptedAt: new Date(),
       },
     }),
     prisma.betaCode.update({

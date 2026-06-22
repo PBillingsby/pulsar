@@ -43,6 +43,7 @@ export const registerProjectSchema = z.object({
   digestDay: z.number().int().min(0).max(6).optional().default(1),
   digestHour: z.number().int().min(0).max(23).optional().default(8),
   betaCode: z.string().min(1).max(50),
+  termsAccepted: z.literal(true),
 })
 
 export const validateBetaCodeSchema = z.object({
