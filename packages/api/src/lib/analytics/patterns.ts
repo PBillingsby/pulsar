@@ -26,25 +26,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     .filter((s) => !returnerSessions.includes(s.sessionId) && (s._count.sessionId ?? 0) === 1)
     .map((s) => s.sessionId)
 
-  if (returnerSessions.length === 0) {
-    return {
-      returnerTopPage: null,
-      bouncerTopPage: null,
-      activationPage: null,
-      avgDepthReturners: 0,
-      avgDepthBouncers: 0,
-      returnerFirstPages: [],
-      avgSessionDurationReturners: null,
-      avgSessionDurationBouncers: null,
-      rageClickPages: [],
-      deadClickPages: [],
-      formSubmissionRate: null,
-      highIntentPages: [],
-      activationPageScrollDepth: null,
-      deviceBreakdown: null,
-      referrerBreakdown: null,
-    }
-  }
+  const hasReturners: boolean = returnerSessions.length > 0
 
   const [
     returnerPages,
@@ -58,29 +40,35 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     firstPageViewEvents,
     referrerEvents,
   ] = await Promise.all([
-    // top pages for returners
-    prisma.event.groupBy({
-      by: ['url'],
-      where: { projectKey, type: 'page_view', sessionId: { in: returnerSessions } },
-      _count: { url: true },
-      orderBy: { _count: { url: 'desc' } },
-      take: 3,
-    }),
+    // top pages for returners — empty if no returners
+    hasReturners
+      ? prisma.event.groupBy({
+        by: ['url'],
+        where: { projectKey, type: 'page_view', sessionId: { in: returnerSessions } },
+        _count: { url: true },
+        orderBy: { _count: { url: 'desc' } },
+        take: 3,
+      })
+      : Promise.resolve([]),
     // top pages for bouncers
-    prisma.event.groupBy({
-      by: ['url'],
-      where: { projectKey, type: 'page_view', sessionId: { in: bouncerSessions } },
-      _count: { url: true },
-      orderBy: { _count: { url: 'desc' } },
-      take: 1,
-    }),
+    bouncerSessions.length > 0
+      ? prisma.event.groupBy({
+        by: ['url'],
+        where: { projectKey, type: 'page_view', sessionId: { in: bouncerSessions } },
+        _count: { url: true },
+        orderBy: { _count: { url: 'desc' } },
+        take: 1,
+      })
+      : Promise.resolve([]),
     // first page of each returner session
-    prisma.event.findMany({
-      where: { projectKey, type: 'page_view', sessionId: { in: returnerSessions } },
-      orderBy: { timestamp: 'asc' },
-      distinct: ['sessionId'],
-      select: { url: true, sessionId: true },
-    }),
+    hasReturners
+      ? prisma.event.findMany({
+        where: { projectKey, type: 'page_view', sessionId: { in: returnerSessions } },
+        orderBy: { timestamp: 'asc' },
+        distinct: ['sessionId'],
+        select: { url: true, sessionId: true },
+      })
+      : Promise.resolve([]),
     // session end events for duration calculation
     prisma.event.findMany({
       where: { projectKey, type: 'session_end', timestamp: { gte: since } },
@@ -107,13 +95,10 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
       orderBy: { _count: { url: 'desc' } },
       take: 5,
     }),
-    // dead click events grouped by page
-    prisma.event.groupBy({
-      by: ['url'],
+    // dead click events with sessionId, for unique-session counting
+    prisma.event.findMany({
       where: { projectKey, type: 'dead_click', timestamp: { gte: since } },
-      _count: { url: true },
-      orderBy: { _count: { url: 'desc' } },
-      take: 5,
+      select: { url: true, sessionId: true },
     }),
     // first page_view per session for device detection
     prisma.event.findMany({
@@ -131,11 +116,11 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     }),
   ])
 
-  // activation page
+  // activation page — null if no returners
   const bouncerTopUrl: string | null = bouncerPages[0]?.url ?? null
-  const activationPage: string | null = returnerPages.find(
-    (p) => p.url !== bouncerTopUrl
-  )?.url ?? returnerPages[0]?.url ?? null
+  const activationPage: string | null = hasReturners
+    ? returnerPages.find((p) => p.url !== bouncerTopUrl)?.url ?? returnerPages[0]?.url ?? null
+    : null
 
   // returner first pages
   const firstPageCounts: Record<string, number> = {}
@@ -148,7 +133,7 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
     .map(([url, count]) => ({ url, count }))
 
   // avg session depth
-  const avgDepthReturners: number = returnerSessions.length > 0
+  const avgDepthReturners: number = hasReturners
     ? sessionData.filter((s) => returnerSessions.includes(s.sessionId))
       .reduce((sum, s) => sum + (s._count.sessionId ?? 0), 0) / returnerSessions.length
     : 0
@@ -190,10 +175,15 @@ export async function detectPatterns(projectKey: string): Promise<BehavioralPatt
   }))
 
   // dead click pages
-  const deadClickPages = deadClickEvents.map((e) => ({
-    url: e.url,
-    count: e._count.url,
-  }))
+  const deadClickBySessionMap: Map<string, Set<string>> = new Map()
+  for (const e of deadClickEvents) {
+    if (!deadClickBySessionMap.has(e.url)) deadClickBySessionMap.set(e.url, new Set())
+    deadClickBySessionMap.get(e.url)!.add(e.sessionId)
+  }
+  const deadClickPages = Array.from(deadClickBySessionMap.entries())
+    .map(([url, sessions]) => ({ url, count: sessions.size }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
 
   // form submission rate
   const formSubmitSessions: Set<string> = new Set(formSubmitEvents.map((e) => e.sessionId))
