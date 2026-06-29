@@ -4,7 +4,7 @@ import { captureWeeklySnapshot, getRecentSnapshots } from '@/lib/analytics/snaps
 import { generateLLMInsight } from '@/lib/digest/insight'
 import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
 
-const projectKey: string = 'my-app-xgb9f8'
+const projectKey: string = 'testing-terms-and-pr-9ezqui'
 
 await captureWeeklySnapshot(projectKey)
 

@@ -1,6 +1,6 @@
 import { buildDigest } from '@/lib/digest/index'
 
-const digest = await buildDigest('dropframe-qdkuz0')
+const digest = await buildDigest('testing-terms-and-pr-9ezqui')
 
 console.log('\n--- TODAY\'S PULSE ---')
 console.log(`Date: ${digest.date}`)
