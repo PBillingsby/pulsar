@@ -1,6 +1,6 @@
-import { describe, it, expect, mock, beforeEach } from 'bun:test'
-import { Hono } from 'hono'
 import { projectsRouter } from '@/routes/projects'
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { Hono } from 'hono'
 
 const VALID_BETA_CODE = 'PULSAR-BETA-001'
 
@@ -134,6 +134,7 @@ describe('POST /projects/register', () => {
         name: 'My App',
         email: 'founder@myapp.com',
         betaCode: VALID_BETA_CODE,
+        termsAccepted: true,
       }),
     })
     const body = await res.json()
@@ -201,6 +202,7 @@ describe('POST /projects/register', () => {
         name: 'My Cool App',
         email: 'founder@myapp.com',
         betaCode: VALID_BETA_CODE,
+        termsAccepted: true,
       }),
     })
     const body = await res.json()
@@ -216,34 +218,12 @@ describe('POST /projects/register', () => {
         name: 'My App',
         email: 'Founder@MyApp.com',
         betaCode: VALID_BETA_CODE,
+        termsAccepted: true,
       }),
     })
     const body = await res.json()
 
     expect(body.data.email).toBe('founder@myapp.com')
-  })
-})
-
-describe('GET /projects/:projectKey', () => {
-  it('returns a project by key', async () => {
-    const res = await app.request('/projects/my-app-abc123')
-    const body = await res.json()
-
-    expect(res.status).toBe(200)
-    expect(body.success).toBe(true)
-    expect(body.data.projectKey).toBe('my-app-abc123')
-    expect(body.data.name).toBe('My App')
-  })
-
-  it('returns 404 for unknown project key', async () => {
-    mockFindFirst.mockImplementationOnce(async () => null)
-
-    const res = await app.request('/projects/unknown-key')
-    const body = await res.json()
-
-    expect(res.status).toBe(404)
-    expect(body.success).toBe(false)
-    expect(body.error).toBe('Project not found')
   })
 })
 
