@@ -1,19 +1,41 @@
-import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
 import { prisma } from '@/db/client'
 import { filterEvents } from '@/lib/filter/index'
 import { ingestSchema, type IngestInput } from '@/lib/validate/schemas'
 import type { ApiResponse, IncomingEvent } from '@/types/index'
+import { zValidator } from '@hono/zod-validator'
 import { Prisma } from '@prisma/client'
+import { Hono } from 'hono'
 
 export const ingestRouter = new Hono()
 
+function hostnameOf(value: string): string | null {
+  try {
+    return new URL(value).hostname.toLowerCase().replace(/^www\./, '')
+  } catch {
+    return null
+  }
+}
+
+// Exact match on the registered domain or a subdomain.
+// "app.example.com" passes for "example.com"; "example.com.evil.net" does not.
+export function isAllowedOrigin(originHeader: string, domain: string): boolean {
+  const hostname: string | null = hostnameOf(originHeader)
+  if (!hostname) return false
+  return hostname === domain || hostname.endsWith(`.${domain}`)
+}
 ingestRouter.post('/', zValidator('json', ingestSchema), async (c) => {
   const body: IngestInput = c.req.valid('json')
   const isDebug: boolean = c.req.header('x-pulsar-debug') === 'true'
   const isIgnored: boolean = c.req.header('x-pulsar-ignore') === 'true'
 
-  const projectKey: string = body.events[0]?.projectKey ?? ''
+  // A batch belongs to one project, or events could be written under someone else's key
+  const projectKey: string = body.events[0].projectKey
+  if (body.events.some((e) => e.projectKey !== projectKey)) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'All events in a batch must share one projectKey',
+    }, 400)
+  }
 
   const project = await prisma.project.findFirst({
     where: {
@@ -32,16 +54,10 @@ ingestRouter.post('/', zValidator('json', ingestSchema), async (c) => {
     }, 404)
   }
 
-  const origin: string = c.req.header('origin') ?? c.req.header('referer') ?? ''
+  if (project.domain) {
+    const origin: string = c.req.header('origin') ?? c.req.header('referer') ?? ''
 
-  if (origin && project.domain) {
-    const normalisedOrigin: string = origin
-      .toLowerCase()
-      .replace(/^https?:\/\//, '')
-      .replace(/^www\./, '')
-      .split('/')[0]
-
-    if (!normalisedOrigin.includes(project.domain)) {
+    if (!isAllowedOrigin(origin, project.domain)) {
       return c.json<ApiResponse<null>>({
         success: false,
         error: 'Origin not permitted for this project key',

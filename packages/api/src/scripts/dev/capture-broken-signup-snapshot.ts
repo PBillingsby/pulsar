@@ -21,6 +21,15 @@ interface SnapshotInput {
 
 const snapshots: SnapshotInput[] = [
   {
+    weekStart: weekStartDate(4),
+    totalVisitors: 100,
+    comebackRate: 30,
+    returning: 30,
+    totalEvents: 425,
+    rageClickCount: 0,
+    activationPage: 'https://myapp.com/dashboard',
+  },
+  {
     weekStart: weekStartDate(3),
     totalVisitors: 100,
     comebackRate: 28,

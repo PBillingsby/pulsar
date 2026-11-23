@@ -78,6 +78,24 @@ function buildBouncerSession(weeksAgo: number, dayOffset: number): EventInput[] 
   ]
 }
 
+// existing user, returns normally, never touches signup (already has an account)
+function buildExistingUserSession(weeksAgo: number, dayOffset: number): EventInput[] {
+  const events: EventInput[] = []
+  const sid: string = sessionId()
+  const start: Date = dateAt(weeksAgo, dayOffset, 9)
+
+  events.push({ type: 'page_view', sessionId: sid, projectKey: PROJECT_KEY, url: 'https://myapp.com/dashboard', timestamp: start, metadata: {} })
+  events.push({ type: 'click', sessionId: sid, projectKey: PROJECT_KEY, url: 'https://myapp.com/dashboard', timestamp: offset(start, 30), metadata: { label: 'view-reports', tagName: 'button' } })
+  events.push({ type: 'session_end', sessionId: sid, projectKey: PROJECT_KEY, url: 'https://myapp.com/dashboard', timestamp: offset(start, 90), metadata: { durationSeconds: 90, reason: 'beforeunload' } })
+
+  // return visit a couple days later — same session id used loosely to simulate a returner
+  const returnStart: Date = dateAt(weeksAgo, dayOffset - 2, 14)
+  events.push({ type: 'page_view', sessionId: sid, projectKey: PROJECT_KEY, url: 'https://myapp.com/dashboard', timestamp: returnStart, metadata: {} })
+  events.push({ type: 'session_end', sessionId: sid, projectKey: PROJECT_KEY, url: 'https://myapp.com/dashboard', timestamp: offset(returnStart, 60), metadata: { durationSeconds: 60, reason: 'beforeunload' } })
+
+  return events
+}
+
 async function seed(): Promise<void> {
   console.log('Clearing existing events for broken signup story...')
   await prisma.event.deleteMany({ where: { projectKey: PROJECT_KEY } })
@@ -101,9 +119,11 @@ async function seed(): Promise<void> {
   for (let i = 0; i < 64; i++) events = events.concat(buildBouncerSession(1, i % 6))
 
   // this week — broken, ~8% form submission rate, dead clicks everywhere on signup
+  // mixed in: existing users unaffected by the signup bug, returning normally
   for (let i = 0; i < 8; i++) events = events.concat(buildHealthySignupSession(0, i % 6))
   for (let i = 0; i < 42; i++) events = events.concat(buildBrokenSignupSession(0, i % 6, 4))
-  for (let i = 0; i < 50; i++) events = events.concat(buildBouncerSession(0, i % 6))
+  for (let i = 0; i < 35; i++) events = events.concat(buildBouncerSession(0, i % 6))
+  for (let i = 0; i < 22; i++) events = events.concat(buildExistingUserSession(0, i % 6))
 
   console.log(`Inserting ${events.length} events...`)
   await prisma.event.createMany({ data: events })
