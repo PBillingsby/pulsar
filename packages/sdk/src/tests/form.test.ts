@@ -16,7 +16,7 @@ describe('listenForFormSubmits', () => {
     localStorage.clear()
     window = new Window({ url: 'https://example.com' })
     globalThis.document = window.document as unknown as Document
-    globalThis.window = window as unknown as Window & typeof globalThis
+    globalThis.window = window as unknown as typeof globalThis.window
 
     captured = []
     const mockSender = async (events: PulsarEvent[]): Promise<PulsarEvent[]> => {

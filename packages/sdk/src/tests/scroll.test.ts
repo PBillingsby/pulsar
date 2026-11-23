@@ -17,7 +17,7 @@ describe('listenForScrollDepth', () => {
     localStorage.clear()
     window = new Window({ url: 'https://example.com' })
     globalThis.document = window.document as unknown as Document
-    globalThis.window = window as unknown as Window & typeof globalThis
+    globalThis.window = window as unknown as typeof globalThis.window
 
     // set up scrollable page
     Object.defineProperty(window.document.documentElement, 'scrollHeight', { value: 2000, configurable: true })
