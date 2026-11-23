@@ -1,5 +1,5 @@
 import { prisma } from '@/db/client'
-import { generateSecretKey } from '@/lib/auth/index'
+import { generateProjectKey, generateSecretKey } from '@/lib/auth/index'
 import { sendDeleteProjectEmail } from '@/lib/email/delete-project'
 import { sendWelcomeEmail } from '@/lib/email/welcome'
 import {
@@ -18,18 +18,6 @@ import { Hono } from 'hono'
 import crypto from 'node:crypto'
 
 export const projectsRouter = new Hono()
-
-function generateProjectKey(name: string): string {
-  const slug: string = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 20)
-
-  const suffix: string = Math.random().toString(36).slice(2, 8)
-  return `${slug}-${suffix}`
-}
 
 function normaliseDomain(raw: string): string {
   return raw
@@ -154,9 +142,19 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
   }
 
   const projectKey: string = generateProjectKey(body.name.trim())
+  const code: string = body.betaCode.trim().toUpperCase()
 
-  const [project] = await prisma.$transaction([
-    prisma.project.create({
+  // Claim a beta-code slot and create the project atomically. The conditional
+  // updateMany means two simultaneous signups can't both take the last slot.
+  const project = await prisma.$transaction(async (tx) => {
+    const claimed = await tx.betaCode.updateMany({
+      where: { code, active: true, usedCount: { lt: betaCode.maxUses } },
+      data: { usedCount: { increment: 1 } },
+    })
+
+    if (claimed.count === 0) return null
+
+    return tx.project.create({
       data: {
         projectKey,
         secretKey: generateSecretKey(),
@@ -167,15 +165,18 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
         language: body.language ?? 'English',
         digestDay: body.digestDay ?? 1,
         digestHour: body.digestHour ?? 8,
-        betaCode: body.betaCode.trim().toUpperCase(),
+        betaCode: code,
         termsAcceptedAt: new Date(),
       },
-    }),
-    prisma.betaCode.update({
-      where: { code: body.betaCode.trim().toUpperCase() },
-      data: { usedCount: { increment: 1 } },
-    }),
-  ])
+    })
+  })
+
+  if (!project) {
+    return c.json<ApiResponse<null>>({
+      success: false,
+      error: 'This beta code has reached its maximum uses',
+    }, 400)
+  }
 
   const response: ProjectResponse = toProjectResponse(project)
 
@@ -183,6 +184,7 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
     console.error('[Pulsar] Welcome email failed:', err)
   })
 
+  // The secret key is only shown here. Never ship it in the SDK.
   return c.json({ success: true, data: { ...response, secretKey: project.secretKey } }, 201)
 })
 

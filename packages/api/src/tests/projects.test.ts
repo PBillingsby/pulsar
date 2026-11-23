@@ -4,8 +4,9 @@ import { Hono } from 'hono'
 
 const VALID_BETA_CODE = 'PULSAR-BETA-001'
 
-const mockCreate = mock(async (args: { data: { projectKey: string; name: string; email: string; beta: boolean } }) => ({
-  projectKey: args.data.projectKey,  // this is already correct
+const mockCreate = mock(async (args: { data: { projectKey: string; secretKey: string; name: string; email: string; beta: boolean } }) => ({
+  projectKey: args.data.projectKey,
+  secretKey: args.data.secretKey,
   name: args.data.name,
   email: args.data.email,
   domain: null,
@@ -90,7 +91,17 @@ const mockTokenUpdate = mock(async () => ({
   code: VALID_BETA_CODE,
 }))
 
-const mockTransaction = mock(async (ops: Promise<unknown>[]) => Promise.all(ops))
+const mockBetaCodeUpdateMany = mock(async (): Promise<{ count: number }> => ({ count: 1 }))
+
+// Supports both forms: an array of queries, or an interactive callback given a tx client
+const mockTransaction = mock(async (ops: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) =>
+  typeof ops === 'function'
+    ? ops({
+      project: { create: mockCreate },
+      betaCode: { updateMany: mockBetaCodeUpdateMany },
+    })
+    : Promise.all(ops)
+)
 
 mock.module('@/db/client', () => ({
   prisma: {
@@ -103,6 +114,7 @@ mock.module('@/db/client', () => ({
     betaCode: {
       findUnique: mockBetaCodeFindUnique,
       update: mockBetaCodeUpdate,
+      updateMany: mockBetaCodeUpdateMany,
     },
     projectDeletionToken: {
       create: mockTokenCreate,
@@ -124,6 +136,42 @@ describe('POST /projects/register', () => {
     mockBetaCodeFindUnique.mockClear()
     mockBetaCodeUpdate.mockClear()
     mockTransaction.mockClear()
+  })
+
+  it('returns a secret key once, separate from the public project key', async () => {
+    const res = await app.request('/projects/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'My App',
+        email: 'founder@myapp.com',
+        betaCode: VALID_BETA_CODE,
+        termsAccepted: true,
+      }),
+    })
+    const body = await res.json()
+
+    expect(body.data.secretKey).toMatch(/^psk_[a-f0-9]{64}$/)
+    expect(body.data.secretKey).not.toContain(body.data.projectKey)
+  })
+
+  it('rejects registration when the last beta slot is taken concurrently', async () => {
+    mockBetaCodeUpdateMany.mockImplementationOnce(async () => ({ count: 0 }))
+
+    const res = await app.request('/projects/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'My App',
+        email: 'founder@myapp.com',
+        betaCode: VALID_BETA_CODE,
+        termsAccepted: true,
+      }),
+    })
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toBe('This beta code has reached its maximum uses')
   })
 
   it('registers a project with valid input', async () => {
