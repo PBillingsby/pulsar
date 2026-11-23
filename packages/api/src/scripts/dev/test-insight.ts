@@ -17,7 +17,7 @@ const [current, snapshots, patterns]: [PulsarStats, WeeklySnapshot[], Behavioral
 console.log('Current comeback rate:', current.comebackRate)
 console.log('Patterns:', JSON.stringify(patterns, null, 2))
 
-const ctx: DigestContext = { current, snapshots, patterns }
+const ctx: DigestContext = { current, snapshots, patterns, language: 'English', plan: 'beta' }
 
 const insight: string = await generateLLMInsight(ctx)
 console.log('\nInsight:', insight)

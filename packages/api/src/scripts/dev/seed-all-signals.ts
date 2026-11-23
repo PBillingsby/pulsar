@@ -1,4 +1,5 @@
 import { prisma } from '@/db/client'
+import { Prisma } from '@prisma/client'
 
 // Use a dedicated test project — run bun run src/scripts/dev/seed-all-signals.ts
 const PROJECT_KEY: string = 'trend-test-activatio-xmq8i3'
@@ -26,7 +27,7 @@ interface EventInput {
   projectKey: string
   url: string
   timestamp: Date
-  metadata: Record<string, unknown>
+  metadata: Prisma.InputJsonValue
 }
 
 async function seed(): Promise<void> {

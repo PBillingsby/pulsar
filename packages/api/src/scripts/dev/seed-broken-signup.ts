@@ -1,4 +1,5 @@
 import { prisma } from '@/db/client'
+import { Prisma } from '@prisma/client'
 
 const PROJECT_KEY: string = 'testing-terms-and-pr-9ezqui'
 
@@ -32,7 +33,7 @@ interface EventInput {
   projectKey: string
   url: string
   timestamp: Date
-  metadata: Record<string, unknown>
+  metadata: Prisma.InputJsonValue
 }
 
 // healthy session: visits signup, submits successfully

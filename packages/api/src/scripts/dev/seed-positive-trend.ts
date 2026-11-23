@@ -1,4 +1,5 @@
 import { prisma } from '@/db/client'
+import { Prisma } from '@prisma/client'
 
 const PROJECT_KEY: string = 'signal-test-2-mhky2x'
 
@@ -25,7 +26,7 @@ interface EventInput {
   projectKey: string
   url: string
   timestamp: Date
-  metadata: Record<string, unknown>
+  metadata: Prisma.InputJsonValue
 }
 
 async function seed(): Promise<void> {
