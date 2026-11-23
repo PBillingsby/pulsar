@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'bun:test'
 import { detectMobileFriction } from '@/lib/analytics/signals/detectors/device'
 import type { SignalInput } from '@/lib/analytics/signals/types'
 import type { BehavioralPatterns, PulsarStats, WeeklySnapshot } from '@/types/index'
+import { describe, expect, it } from 'bun:test'
 
 function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPatterns {
   return {
@@ -19,6 +19,7 @@ function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPa
     highIntentPages: [],
     activationPageScrollDepth: null,
     deviceBreakdown: null,
+    referrerBreakdown: null,
     ...overrides,
   }
 }

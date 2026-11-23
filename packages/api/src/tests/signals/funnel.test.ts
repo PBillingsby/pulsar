@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'bun:test'
 import { detectFunnelDrop } from '@/lib/analytics/signals/detectors/funnel'
 import type { SignalInput } from '@/lib/analytics/signals/types'
 import type { BehavioralPatterns, PulsarStats, WeeklySnapshot } from '@/types/index'
+import { describe, expect, it } from 'bun:test'
 
 function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPatterns {
   return {
@@ -17,6 +17,9 @@ function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPa
     formSubmissionRate: null,
     highIntentPages: [],
     activationPageScrollDepth: null,
+    deadClickPages: [],
+    deviceBreakdown: null,
+    referrerBreakdown: null,
     ...overrides,
   }
 }

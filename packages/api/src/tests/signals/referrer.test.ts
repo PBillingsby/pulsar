@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'bun:test'
 import { detectReferrerFriction } from '@/lib/analytics/signals/detectors/referrer'
 import type { SignalInput } from '@/lib/analytics/signals/types'
 import type { BehavioralPatterns, PulsarStats, WeeklySnapshot } from '@/types/index'
+import { describe, expect, it } from 'bun:test'
 
 function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPatterns {
   return {

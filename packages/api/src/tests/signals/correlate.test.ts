@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'bun:test'
 import { correlateSignals } from '@/lib/analytics/signals/correlate'
 import type { RankedSignal, SignalInput } from '@/lib/analytics/signals/types'
 import type { BehavioralPatterns, PulsarStats, WeeklySnapshot } from '@/types/index'
+import { describe, expect, it } from 'bun:test'
 
 function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPatterns {
   return {
@@ -17,6 +17,9 @@ function makePatterns(overrides: Partial<BehavioralPatterns> = {}): BehavioralPa
     formSubmissionRate: null,
     highIntentPages: [],
     activationPageScrollDepth: null,
+    deadClickPages: [],
+    deviceBreakdown: null,
+    referrerBreakdown: null,
     ...overrides,
   }
 }
@@ -58,6 +61,7 @@ function makeFrictionSignal(page: string = '/connect-integration'): RankedSignal
       'Affects ~15% of sessions this week',
       'This is your activation page — friction here directly impacts retention',
     ],
+    recommendedAction: 'Investigate this page',
   }
 }
 
@@ -71,6 +75,7 @@ function makeRetentionSignal(): RankedSignal {
       'Comeback rate dropped 22pts — from 40% to 18%',
       'Based on 100 visitors this week',
     ],
+    recommendedAction: 'Investigate this page',
   }
 }
 
@@ -84,6 +89,7 @@ function makeFunnelSignal(): RankedSignal {
       'Activation reach rate dropped 20pts — from 60% to 40%',
       'Fewer sessions are reaching /connect-integration this week',
     ],
+    recommendedAction: 'Investigate this page',
   }
 }
 
@@ -97,6 +103,7 @@ function makeIntentSignal(): RankedSignal {
       '8 sessions copied content from /billing',
       'Only 12% of sessions submitted a form',
     ],
+    recommendedAction: 'Investigate this page',
   }
 }
 

@@ -31,7 +31,7 @@ const mockFindUnique = mock(async () => ({
   code: VALID_BETA_CODE,
 }))
 
-const mockFindFirst = mock(async () => ({
+const mockFindFirst = mock(async (): Promise<Record<string, unknown> | null> => ({
   projectKey: 'my-app-abc123',
   name: 'My App',
   email: 'founder@myapp.com',
@@ -76,7 +76,7 @@ const mockTokenCreate = mock(async () => ({
   code: VALID_BETA_CODE,
 }))
 
-const mockTokenFindUnique = mock(async () => ({
+const mockTokenFindUnique = mock(async (): Promise<Record<string, unknown> | null> => ({
   token: 'a'.repeat(64),
   projectKey: 'my-app-abc123',
   email: 'founder@myapp.com',
