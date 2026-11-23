@@ -59,13 +59,8 @@ export const confirmDeleteProjectSchema = z.object({
   token: z.string().min(64),
 })
 
-export const digestTriggerSchema = z.object({
-  email: z.email(),
-})
-
 export type IngestInput = z.infer<typeof ingestSchema>
 export type RegisterProjectInput = z.infer<typeof registerProjectSchema>
 export type ValidateBetaCodeInput = z.infer<typeof validateBetaCodeSchema>
 export type RequestDeleteProjectInput = z.infer<typeof requestDeleteProjectSchema>
 export type ConfirmDeleteProjectInput = z.infer<typeof confirmDeleteProjectSchema>
-export type DigestTriggerInput = z.infer<typeof digestTriggerSchema>

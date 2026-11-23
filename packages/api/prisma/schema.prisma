@@ -38,6 +38,7 @@ model Session {
 model Project {
   id          String   @id @default(cuid())
   projectKey  String   @unique
+  secretKey   String   @unique // private; authenticates stats + digest requests
   name        String
   email       String
   domain      String?  @unique

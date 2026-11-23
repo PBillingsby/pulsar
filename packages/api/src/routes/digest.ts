@@ -1,39 +1,23 @@
-import { Hono } from 'hono'
-import { zValidator } from '@hono/zod-validator'
-import { buildDigest } from '@/lib/digest/index'
-import { prisma } from '@/db/client'
-
-import { sendDigest } from '@/lib/email/index'
-import { digestTriggerSchema, type DigestTriggerInput } from '@/lib/validate/schemas'
 import { captureWeeklySnapshot } from '@/lib/analytics/snapshots'
+import { authorizeProject } from '@/lib/auth/index'
+import { buildDigest } from '@/lib/digest/index'
+import { sendDigest } from '@/lib/email/index'
 import type { ApiResponse, DigestData } from '@/types/index'
+import { Hono } from 'hono'
 
 export const digestRouter = new Hono()
 
-digestRouter.post('/:projectKey', zValidator('json', digestTriggerSchema), async (c) => {
-  const projectKey: string = c.req.param('projectKey')
-  const { email }: DigestTriggerInput = c.req.valid('json')
-
-  const project = await prisma.project.findFirst({
-    where: {
-      projectKey,
-      deletedAt: null,
-    },
-    select: {
-      language: true,
-    },
-  })
-
+// Needs the secret key and only ever sends to the email on file, so a public
+// projectKey can't be used to read data or email arbitrary addresses.
+digestRouter.post('/:projectKey', async (c) => {
+  const project = await authorizeProject(c, c.req.param('projectKey'))
   if (!project) {
-    return c.json<ApiResponse<null>>({
-      success: false,
-      error: 'Project not found or deleted',
-    }, 404)
+    return c.json<ApiResponse<null>>({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  await captureWeeklySnapshot(projectKey)
-  const digest: DigestData = await buildDigest(projectKey)
-  await sendDigest(email, digest, project.language ?? 'English')
+  await captureWeeklySnapshot(project.projectKey)
+  const digest: DigestData = await buildDigest(project.projectKey)
+  await sendDigest(project.email, digest, project.language ?? 'English')
 
   return c.json<ApiResponse<DigestData>>({ success: true, data: digest })
 })

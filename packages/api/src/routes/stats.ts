@@ -1,23 +1,16 @@
-import { Hono } from 'hono'
 import { getStats } from '@/lib/analytics'
+import { authorizeProject } from '@/lib/auth/index'
 import type { ApiResponse, PulsarStats } from '@/types/index'
+import { Hono } from 'hono'
 
 export const statsRouter = new Hono()
 
 statsRouter.get('/:projectKey', async (c) => {
-  const projectKey = c.req.param('projectKey')
-
-  if (!projectKey) {
-    return c.json<ApiResponse<null>>({
-      success: false,
-      error: 'Project key is required',
-    }, 400)
+  const project = await authorizeProject(c, c.req.param('projectKey'))
+  if (!project) {
+    return c.json<ApiResponse<null>>({ success: false, error: 'Unauthorized' }, 401)
   }
 
-  const stats = await getStats(projectKey)
-
-  return c.json<ApiResponse<PulsarStats>>({
-    success: true,
-    data: stats,
-  })
+  const stats: PulsarStats = await getStats(project.projectKey)
+  return c.json<ApiResponse<PulsarStats>>({ success: true, data: stats })
 })

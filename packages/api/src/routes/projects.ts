@@ -1,4 +1,5 @@
 import { prisma } from '@/db/client'
+import { generateSecretKey } from '@/lib/auth/index'
 import { sendDeleteProjectEmail } from '@/lib/email/delete-project'
 import { sendWelcomeEmail } from '@/lib/email/welcome'
 import {
@@ -158,6 +159,7 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
     prisma.project.create({
       data: {
         projectKey,
+        secretKey: generateSecretKey(),
         name: body.name.trim(),
         email: body.email.trim().toLowerCase(),
         domain,
@@ -181,7 +183,7 @@ projectsRouter.post('/register', zValidator('json', registerProjectSchema), asyn
     console.error('[Pulsar] Welcome email failed:', err)
   })
 
-  return c.json<ApiResponse<ProjectResponse>>({ success: true, data: response }, 201)
+  return c.json({ success: true, data: { ...response, secretKey: project.secretKey } }, 201)
 })
 
 projectsRouter.post(
