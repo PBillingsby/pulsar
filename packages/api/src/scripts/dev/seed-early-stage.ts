@@ -56,7 +56,7 @@ async function seed(): Promise<void> {
   const sessions = await prisma.event.findMany({ where: { projectKey: PROJECT_KEY }, select: { sessionId: true }, distinct: ['sessionId'] })
   console.log(`Unique sessions: ${sessions.length}`)
   console.log('Expected: no signals fire, low data volume warning in insight')
-  console.log(`\nRun: curl -X POST http://localhost:3001/digest/${PROJECT_KEY} -H "Content-Type: application/json" -d '{ "email": "philbillingsby@gmail.com" }'`)
+  console.log(`\nRun: curl -X POST http://localhost:3001/digest/${PROJECT_KEY} -H "Authorization: Bearer $PULSAR_SECRET_KEY"`)
 }
 
 seed()

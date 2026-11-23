@@ -110,7 +110,7 @@ async function seed(): Promise<void> {
   console.log('  positive_trend — comeback rate ~38% vs 12% last week (rise of ~26pts)')
   console.log('  hidden_winner  — /onboarding visited significantly more by returners')
   console.log('\nNo negative signals expected')
-  console.log(`\nRun digest: curl -X POST http://localhost:3001/digest/${PROJECT_KEY} -H "Content-Type: application/json" -d '{ "email": "philbillingsby@gmail.com" }'`)
+  console.log(`\nRun digest: curl -X POST http://localhost:3001/digest/${PROJECT_KEY} -H "Authorization: Bearer $PULSAR_SECRET_KEY"`)
 }
 
 seed()
