@@ -1,8 +1,9 @@
-import type { PulsarEvent } from '@/types/index'
 import { sendEvents } from '@/lib/queue/sender'
+import type { PulsarEvent } from '@/types/index'
 
 const FLUSH_INTERVAL_MS: number = 5000
 const MAX_QUEUE_SIZE: number = 20
+const MAX_BUFFERED_EVENTS: number = 500
 
 type SenderFn = (events: PulsarEvent[]) => Promise<PulsarEvent[]>
 
@@ -38,9 +39,13 @@ export class EventQueue {
   async flush(): Promise<void> {
     if (this.queue.length === 0) return
 
-    const batch = [...this.queue]
+    const batch: PulsarEvent[] = [...this.queue]
     this.queue = []
-    this.queue = await this.sender(batch)
+    const failed: PulsarEvent[] = await this.sender(batch)
+
+    // Events can be enqueued while the request is in flight. Put failed events back
+    // in front of them instead of overwriting the queue, and drop the oldest past the cap.
+    this.queue = [...failed, ...this.queue].slice(-MAX_BUFFERED_EVENTS)
   }
 
   start(): void {
