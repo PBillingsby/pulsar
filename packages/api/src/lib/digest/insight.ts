@@ -4,12 +4,53 @@ import type { RankedSignal } from '@/lib/analytics/signals/types'
 import type { BehavioralPatterns, DigestContext, PulsarStats, WeeklySnapshot } from '@/types/index'
 import Anthropic from '@anthropic-ai/sdk'
 
-const client: Anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+let client: Anthropic | null = null
+function getClient(): Anthropic {
+  client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  return client
+}
 
 function toPath(url: string): string {
   try { return new URL(url).pathname } catch { return url }
+}
+
+export interface InsightPayload {
+  observationFacts: string[]
+  interpretationCandidates: string[]
+  recommendedAction: string
+  dataVolume: string
+}
+
+// Every number in a string. NFKC turns full-width digits (Japanese/Chinese output)
+// into ASCII; commas are thousands separators.
+function extractNumbers(text: string): number[] {
+  const matches: RegExpMatchArray | null = text.normalize('NFKC').match(/\d[\d,]*(?:\.\d+)?/g)
+  return (matches ?? []).map((m: string) => Number(m.replace(/,/g, ''))).filter((n: number) => Number.isFinite(n))
+}
+
+/**
+ * The model may only reword facts we computed, so every number it writes must
+ * already exist in the payload. Anything else is a made-up statistic.
+ */
+export function verifyInsight(output: string, payload: InsightPayload): { ok: true } | { ok: false; reason: string } {
+  const text: string = output.trim()
+  if (text.length === 0) return { ok: false, reason: 'empty output' }
+
+  const source: string = [
+    ...payload.observationFacts,
+    ...payload.interpretationCandidates,
+    payload.recommendedAction,
+    payload.dataVolume,
+  ].join(' ')
+
+  const allowed: Set<number> = new Set(extractNumbers(source))
+  const invented: number[] = extractNumbers(text).filter((n: number) => !allowed.has(n))
+
+  if (invented.length > 0) {
+    return { ok: false, reason: `numbers not in source facts: ${invented.join(', ')}` }
+  }
+
+  return { ok: true }
 }
 
 function buildInsightPayload(
@@ -17,12 +58,7 @@ function buildInsightPayload(
   correlated: CorrelatedSignal | null,
   patterns: BehavioralPatterns,
   current: PulsarStats
-): {
-  observationFacts: string[]
-  interpretationCandidates: string[]
-  recommendedAction: string
-  dataVolume: string
-} {
+): InsightPayload {
   const activationPath: string | null = patterns.activationPage
     ? toPath(patterns.activationPage)
     : null
@@ -137,17 +173,12 @@ function buildInsightPayload(
   }
 }
 
-function buildPrompt(
-  ctx: DigestContext,
-  signals: RankedSignal[],
-  correlated: CorrelatedSignal | null
-): string {
-  const { current, snapshots, patterns } = ctx
-
-  const payload = buildInsightPayload(signals, correlated, patterns, current)
-  console.log('[Pulsar] observation facts:', payload.observationFacts)
-  console.log('[Pulsar] interpretation:', payload.interpretationCandidates)
-  console.log('[Pulsar] action:', payload.recommendedAction)
+function buildPrompt(ctx: DigestContext, payload: InsightPayload): string {
+  if (process.env.PULSAR_DEBUG === 'true') {
+    console.log('[Pulsar] observation facts:', payload.observationFacts)
+    console.log('[Pulsar] interpretation:', payload.interpretationCandidates)
+    console.log('[Pulsar] action:', payload.recommendedAction)
+  }
   return `You are a copywriter writing a short product insight for an early-stage founder.
 
 The analysis has already been completed. Do not perform analysis. Your only job is to rewrite the information below into natural language.
@@ -242,17 +273,26 @@ export async function generateLLMInsight(ctx: DigestContext): Promise<string> {
     plan: ctx.plan,
   })
 
+  const payload: InsightPayload = buildInsightPayload(signals, correlated, ctx.patterns, ctx.current)
+
   try {
-    const message: Anthropic.Message = await client.messages.create({
+    const message: Anthropic.Message = await getClient().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 300,
-      messages: [{ role: 'user' as const, content: buildPrompt(ctx, signals, correlated) }],
+      messages: [{ role: 'user' as const, content: buildPrompt(ctx, payload) }],
     })
 
     const block: Anthropic.ContentBlock = message.content[0]
     if (block.type !== 'text') return generateRuleBasedInsight(ctx, signals, correlated)
-    const textBlock: Anthropic.TextBlock = block as Anthropic.TextBlock
-    return textBlock.text.trim()
+
+    const text: string = (block as Anthropic.TextBlock).text.trim()
+    const check = verifyInsight(text, payload)
+    if (!check.ok) {
+      console.warn('[Pulsar] LLM insight rejected, using rule-based fallback:', check.reason)
+      return generateRuleBasedInsight(ctx, signals, correlated)
+    }
+
+    return text
   } catch (err: unknown) {
     console.error('[Pulsar] LLM insight failed, using rule-based fallback:', err)
     return generateRuleBasedInsight(ctx, signals, correlated)
